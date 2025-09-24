@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .admin-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1rem;
+            text-align: center;
+        }
+        .admin-calendar-day-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background-color: #fff;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            min-height: 100px;
+        }
+         @media (max-width: 1024px) {
+            .admin-calendar-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+         @media (max-width: 640px) {
+            .admin-calendar-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+    <main class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-grow py-8">
+        <div id="admin-content" class="w-full space-y-8">
+            <h1 class="text-4xl font-extrabold text-blue-600 mb-2 text-center">Admin Panel</h1>
+            <div class="flex justify-center space-x-4 mb-8">
+                <button id="show-schedule" class="px-6 py-3 rounded-md font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors">Schedule Admin</button>
+                <button id="show-tracker" class="px-6 py-3 rounded-md font-bold text-gray-800 bg-gray-200 hover:bg-gray-300 transition-colors">Class Tracker</button>
+            </div>
+            
+            <!-- Schedule Admin Panel -->
+            <div id="schedule-admin-panel" class="admin-tab">
+                <div class="bg-white shadow-lg rounded-xl p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Manage Slots</h2>
+                        <div class="space-y-4">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">Create New Slot</h3>
+                            <form id="create-slot-form" class="space-y-4">
+                                <div>
+                                    <label for="day" class="block text-sm font-medium text-gray-700">Day</label>
+                                    <select id="day" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+                                        <option value="Monday">Monday</option>
+                                        <option value="Tuesday">Tuesday</option>
+                                        <option value="Wednesday">Wednesday</option>
+                                        <option value="Thursday">Thursday</option>
+                                        <option value="Friday">Friday</option>
+                                        <option value="Saturday">Saturday</option>
+                                        <option value="Sunday">Sunday</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="time" class="block text-sm font-medium text-gray-700">Time (e.g., 9:00 AM)</label>
+                                    <input type="text" id="time" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition-colors">
+                                    <span id="create-slot-text">Create Slot</span>
+                                    <div id="create-slot-spinner" class="hidden h-6 w-6 border-4 border-white border-solid rounded-full loader ml-2"></div>
+                                </button>
+                                <div id="create-slot-status" class="text-center text-sm font-semibold mt-2"></div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">All Time Slots</h2>
+                        <div id="all-slots-container" class="admin-calendar-grid">
+                           <!-- Admin calendar will be generated here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 p-6 rounded-lg border border-gray-300 bg-white shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Upcoming Appointments</h2>
+                    <div id="appointments-list-admin" class="space-y-4">
+                        <p class="text-center text-gray-500 italic">Loading appointments...</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Class Tracker Panel -->
+            <div id="class-tracker-panel" class="admin-tab hidden">
+                <div class="bg-white shadow-lg rounded-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Create New Client</h2>
+                    <form id="createClientForm" class="space-y-4">
+                        <div>
+                            <input type="text" id="newClientName" placeholder="Client Name" class="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <input type="number" id="newClientPackageSize" placeholder="Package Size (e.g., 10)" class="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition-colors">
+                            <span id="createClientText">Create Client</span>
+                            <div id="createClientSpinner" class="hidden h-6 w-6 border-4 border-white border-solid rounded-full loader ml-2"></div>
+                        </button>
+                        <div id="newClientStatus" class="mt-4 text-sm font-semibold text-center"></div>
+                    </form>
+                    <div id="newClientIdDisplay" class="hidden mt-4 bg-gray-100 p-4 rounded-md break-words text-sm">
+                        <p class="font-bold">New Client ID:</p>
+                        <p id="generatedId" class="font-mono text-gray-700 mt-1"></p>
+                        <button id="copyIdBtn" class="mt-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-1 rounded-md hover:bg-gray-300">Copy ID</button>
+                        <p class="mt-2 text-xs text-gray-500 italic">Share this ID with the client. It is their unique link to their tracker.</p>
+                    </div>
+                </div>
+                <div class="mt-8 p-6 rounded-lg border border-gray-300 bg-white shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Your Clients</h2>
+                    <div id="clientList" class="space-y-4">
+                        <p class="text-center text-gray-500 italic">Loading clients...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer id="contact" class="bg-white mt-8 py-8 px-4 sm:px-6 lg:px-8 shadow-inner rounded-t-xl">
+        <div class="max-w-7xl mx-auto text-center text-gray-600">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Admin Contact</h2>
+            <p><strong>Email:</strong> <a href="mailto:dan@dgkmills.com" class="text-blue-600 hover:underline">dan@dgkmills.com</a></p>
+            <p><strong>Phone:</strong> 086 333 1493</p>
+            <p><strong>Location:</strong> Ban Pong, Thailand</p>
+        </div>
+    </footer>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, addDoc, collection, onSnapshot, query, setDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js";
+        
+        const firebaseConfig = {
+          apiKey: "AIzaSyAdkkonrM6gFCN_xmw5g1qSJipHJ_LZKTE",
+          authDomain: "schedule.dgkmills.com",
+          projectId: "dgkmills-schedule-tracker",
+          storageBucket: "dgkmills-schedule-tracker.appspot.com",
+          messagingSenderId: "1078055932000",
+          appId: "1:1078055932000:web:cba2d49fb42eaf319fb305",
+          measurementId: "G-QJ1JM61WK3"
+        };
+        
+        const appId = 'dgkmills-schedule-tracker';
+        const app = initializeApp(firebaseConfig);
+        
+        const appCheck = initializeAppCheck(app, {
+          provider: new ReCaptchaV3Provider('6Le_fssrAAAAAE79h4IgwgqxOghcpWqZyj95pTRq'),
+          isTokenAutoRefreshEnabled: true
+        });
+        
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let userId;
+        let authReady = false;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+            } else {
+                userId = null;
+            }
+            authReady = true;
+            listenForTimeSlots();
+            listenForAppointments();
+            listenForClients();
+        });
+
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken).catch((error) => {
+                console.error("Custom token sign-in failed, signing in anonymously:", error);
+                signInAnonymously(auth);
+            });
+        } else {
+            signInAnonymously(auth);
+        }
+
+        const scheduleBtn = document.getElementById('show-schedule');
+        const trackerBtn = document.getElementById('show-tracker');
+        const schedulePanel = document.getElementById('schedule-admin-panel');
+        const trackerPanel = document.getElementById('class-tracker-panel');
+        
+        scheduleBtn.addEventListener('click', () => {
+            scheduleBtn.classList.add('bg-blue-600', 'text-white');
+            scheduleBtn.classList.remove('bg-gray-200', 'text-gray-800');
+            trackerBtn.classList.remove('bg-blue-600', 'text-white');
+            trackerBtn.classList.add('bg-gray-200', 'text-gray-800');
+            schedulePanel.classList.remove('hidden');
+            trackerPanel.classList.add('hidden');
+        });
+
+        trackerBtn.addEventListener('click', () => {
+            trackerBtn.classList.add('bg-blue-600', 'text-white');
+            trackerBtn.classList.remove('bg-gray-200', 'text-gray-800');
+            scheduleBtn.classList.remove('bg-blue-600', 'text-white');
+            scheduleBtn.classList.add('bg-gray-200', 'text-gray-800');
+            trackerPanel.classList.remove('hidden');
+            schedulePanel.classList.add('hidden');
+        });
+
+        function listenForTimeSlots() {
+            if (!authReady) {
+                 setTimeout(listenForTimeSlots, 100);
+                 return;
+            }
+            if (!userId) {
+                document.getElementById('all-slots-container').innerHTML = '<p class="text-center text-gray-500 italic">Authentication failed.</p>';
+                return;
+            }
+            const slotsRef = collection(db, `artifacts/${appId}/public/data/time-slots`);
+            onSnapshot(slotsRef, (snapshot) => {
+                const slotsContainer = document.getElementById('all-slots-container');
+                slotsContainer.innerHTML = '';
+                
+                const slotsByDay = {};
+                snapshot.forEach(doc => {
+                    const data = { id: doc.id, ...doc.data() };
+                    if (!slotsByDay[data.day]) {
+                        slotsByDay[data.day] = [];
+                    }
+                    slotsByDay[data.day].push(data);
+                });
+
+                const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+                dayOrder.forEach(day => {
+                    const dayCol = document.createElement('div');
+                    dayCol.className = 'admin-calendar-day-col';
+
+                    const header = document.createElement('div');
+                    header.className = 'bg-gray-200 p-2 rounded-md font-bold text-center text-sm';
+                    header.textContent = day;
+                    dayCol.appendChild(header);
+
+                    if (slotsByDay[day]) {
+                        slotsByDay[day].sort((a, b) => new Date(`1970/01/01 ${a.time}`) - new Date(`1970/01/01 ${b.time}`));
+                        
+                        slotsByDay[day].forEach(data => {
+                            const slotDiv = document.createElement('div');
+                            slotDiv.className = `p-2 text-sm rounded-md border flex flex-col items-center justify-center text-center gap-2 ${data.booked ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`;
+                            slotDiv.innerHTML = `
+                                <div class="font-bold">${data.time}</div>
+                                <div class="text-xs italic text-gray-500">${data.booked ? 'Booked' : 'Available'}</div>
+                                <button class="delete-slot-btn w-full bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-md hover:bg-red-700" data-doc-id="${data.id}">
+                                    Delete
+                                </button>
+                            `;
+                            dayCol.appendChild(slotDiv);
+                        });
+                    }
+                    slotsContainer.appendChild(dayCol);
+                });
+
+                document.querySelectorAll('.delete-slot-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const docId = e.target.closest('[data-doc-id]').dataset.docId;
+                        deleteSlot(docId);
+                    });
+                });
+
+            }, (error) => {
+                console.error("Error listening for time slots:", error);
+                document.getElementById('all-slots-container').innerHTML = '<p class="text-center text-red-600 font-semibold">Error loading data.</p>';
+            });
+        }
+        
+        async function deleteSlot(docId) {
+            if (!userId) return;
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/time-slots`, docId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Error deleting slot:", error);
+            }
+        }
+        
+        document.getElementById('create-slot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!userId) {
+                const statusDiv = document.getElementById('create-slot-status');
+                statusDiv.textContent = 'Authentication failed. Please log in again.';
+                statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
+                return;
+            }
+            const day = document.getElementById('day').value;
+            const time = document.getElementById('time').value.trim();
+            
+            if (!time.match(/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i)) {
+                 const statusDiv = document.getElementById('create-slot-status');
+                 statusDiv.textContent = 'Please use format HH:MM AM/PM (e.g., 9:00 AM)';
+                 statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
+                 return;
+            }
+
+            const docId = `${day.toLowerCase()}-${time.replace(/[\s:]/g, '-').toLowerCase()}`;
+
+            const createBtn = e.target.querySelector('button');
+            const createText = document.getElementById('create-slot-text');
+            const createSpinner = document.getElementById('create-slot-spinner');
+            const statusDiv = document.getElementById('create-slot-status');
+
+            createText.classList.add('hidden');
+            createSpinner.classList.remove('hidden');
+            createBtn.disabled = true;
+
+            try {
+                const slotsRef = doc(db, `artifacts/${appId}/public/data/time-slots`, docId);
+                await setDoc(slotsRef, {
+                    day,
+                    time,
+                    booked: false
+                });
+                statusDiv.className = 'mt-4 text-center text-green-600 font-semibold';
+                statusDiv.textContent = 'Slot created successfully!';
+                document.getElementById('create-slot-form').reset();
+            } catch (error) {
+                console.error("Error creating time slot:", error);
+                statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
+                statusDiv.textContent = 'Failed to create slot. Please try again.';
+            } finally {
+                setTimeout(() => {
+                   statusDiv.textContent = '';
+                }, 3000);
+                createText.classList.remove('hidden');
+                createSpinner.classList.add('hidden');
+                createBtn.disabled = false;
+            }
+        });
+        
+        function listenForAppointments() {
+            if (!authReady) {
+                 setTimeout(listenForAppointments, 100);
+                 return;
+            }
+            if (!userId) {
+                document.getElementById('appointments-list-admin').innerHTML = '<p class="text-center text-gray-500 italic">Authentication failed.</p>';
+                return;
+            }
+            const appointmentsRef = collection(db, `artifacts/${appId}/public/data/consultations`);
+            onSnapshot(appointmentsRef, (snapshot) => {
+                const appointmentsList = document.getElementById('appointments-list-admin');
+                appointmentsList.innerHTML = '';
+                if (snapshot.empty) {
+                    appointmentsList.innerHTML = '<p class="text-center text-gray-500 italic">No appointments requested yet.</p>';
+                }
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const li = document.createElement('div');
+                    li.className = 'bg-blue-50 p-4 rounded-lg border border-blue-200';
+                    li.innerHTML = `
+                        <p class="font-bold text-blue-800">Appointment Request</p>
+                        <p class="text-sm text-gray-700 mt-1"><strong>Name:</strong> ${data.name}</p>
+                        <p class="text-sm text-gray-700 mt-1"><strong>Email:</strong> ${data.email}</p>
+                        <p class="text-sm text-gray-700 mt-1"><strong>Time Slot:</strong> ${data.day}, ${data.time}</p>
+                        <p class="text-sm text-gray-700 mt-1"><strong>Class:</strong> ${data.class}</p>
+                        <p class="text-sm text-gray-700 mt-1"><strong>Message:</strong> ${data.message || 'N/A'}</p>
+                        <p class="text-sm text-gray-700 mt-1"><strong>User ID:</strong> <span class="font-mono text-xs">${data.userId}</span></p>
+                        <button class="delete-btn mt-2 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-md hover:bg-red-700" data-doc-id="${doc.id}">Delete Request</button>
+                    `;
+                    appointmentsList.appendChild(li);
+                });
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const docId = e.target.dataset.docId;
+                        deleteAppointment(docId);
+                    });
+                });
+            }, (error) => {
+                console.error("Error fetching appointments:", error);
+                document.getElementById('appointments-list-admin').innerHTML = '<p class="text-center text-red-600 font-semibold">Error loading appointments.</p>';
+            });
+        }
+        
+        async function deleteAppointment(docId) {
+            if (!userId) return;
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/consultations`, docId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Error deleting document:", error);
+            }
+        }
+        
+        function listenForClients() {
+            if (!authReady) {
+                setTimeout(listenForClients, 100);
+                return;
+            }
+            if (!userId) {
+                document.getElementById('clientList').innerHTML = '<p class="text-center text-gray-500 italic">Authentication failed.</p>';
+                return;
+            }
+            const packagesRef = collection(db, `artifacts/${appId}/users/${userId}/classPackages`);
+            onSnapshot(packagesRef, (snapshot) => {
+                const clientListDiv = document.getElementById('clientList');
+                clientListDiv.innerHTML = '';
+                if (snapshot.empty) {
+                    clientListDiv.innerHTML = '<p class="text-center text-gray-500 italic">No clients found. Use the form above to create one.</p>';
+                } else {
+                    snapshot.docs.sort((a, b) => b.data().createdAt.toMillis() - a.data().createdAt.toMillis()).forEach(doc => {
+                        const data = doc.data();
+                        const classesTaught = data.classesTaught || [];
+                        const clientCard = document.createElement('div');
+                        clientCard.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm';
+                        
+                        let taughtClassesHtml = '<p class="text-xs text-gray-500 italic mt-2">No classes taught yet.</p>';
+                        if (classesTaught.length > 0) {
+                            taughtClassesHtml = '<ul class="text-xs text-gray-600 mt-2 list-disc list-inside space-y-1">';
+                            classesTaught.forEach(timestamp => {
+                                taughtClassesHtml += `<li>${new Date(timestamp).toLocaleDateString()}</li>`;
+                            });
+                            taughtClassesHtml += '</ul>';
+                        }
+
+                        clientCard.innerHTML = `
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-900">${data.clientName}</h3>
+                                    <p class="text-sm text-gray-600">Package: ${classesTaught.length} / ${data.totalClasses}</p>
+                                    <p class="text-xs text-gray-400 mt-1 break-words">ID: ${doc.id}</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="mark-taught-btn bg-purple-600 text-white font-bold py-2 px-4 rounded-md hover:bg-purple-700 transition-colors" data-doc-id="${doc.id}">Mark Class as Taught</button>
+                                    <button class="delete-client-btn bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 transition-colors" data-doc-id="${doc.id}">Delete</button>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-2 border-t border-gray-200">
+                                <h4 class="font-semibold text-sm text-gray-700">Class History:</h4>
+                                ${taughtClassesHtml}
+                            </div>
+                        `;
+                        clientListDiv.appendChild(clientCard);
+                    });
+                    document.querySelectorAll('.mark-taught-btn').forEach(button => {
+                        button.addEventListener('click', async (e) => {
+                            markClassTaught(e.target.dataset.docId);
+                        });
+                    });
+                     document.querySelectorAll('.delete-client-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const docId = e.target.dataset.docId;
+                            deleteClient(docId);
+                        });
+                    });
+                }
+            }, (error) => {
+                console.error("Error fetching client data:", error);
+                document.getElementById('clientList').innerHTML = '<p class="text-center text-red-600 font-semibold">Error loading client data.</p>';
+            });
+        }
+
+        async function markClassTaught(docId) {
+            if (!userId) return;
+            try {
+                const privateDocRef = doc(db, `artifacts/${appId}/users/${userId}/classPackages`, docId);
+                const privateDocSnap = await getDoc(privateDocRef);
+
+                if (privateDocSnap.exists()) {
+                    const data = privateDocSnap.data();
+                    const classesTaught = data.classesTaught || [];
+                    if (classesTaught.length >= data.totalClasses) {
+                       console.error("All classes in package have been used.");
+                       const statusDiv = document.getElementById('newClientStatus');
+                       statusDiv.textContent = 'Client has used all classes in their package.';
+                       statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
+                       return;
+                    }
+                    
+                    const newTimestamp = new Date().toISOString();
+                    const publicDocRef = doc(db, `artifacts/${appId}/public/data/client-packages`, docId);
+                    await updateDoc(privateDocRef, { classesTaught: arrayUnion(newTimestamp) });
+                    await updateDoc(publicDocRef, { classesTaught: arrayUnion(newTimestamp) });
+                }
+            } catch (error) {
+                console.error("Error updating document:", error);
+            }
+        }
+        
+        async function deleteClient(docId) {
+            if (!userId) return;
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/classPackages`, docId));
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/client-packages`, docId));
+            } catch (error) {
+                console.error("Error deleting client:", error);
+            }
+        }
+
+        document.getElementById('createClientForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!userId) {
+                document.getElementById('newClientStatus').textContent = 'User not authenticated. Please try again.';
+                document.getElementById('newClientStatus').className = 'mt-4 text-center text-red-600 font-semibold';
+                return;
+            }
+            const clientName = document.getElementById('newClientName').value;
+            const packageSize = parseInt(document.getElementById('newClientPackageSize').value, 10);
+            
+            if (!clientName || isNaN(packageSize) || packageSize <= 0) {
+                document.getElementById('newClientStatus').textContent = 'Please enter a valid name and package size.';
+                document.getElementById('newClientStatus').className = 'mt-4 text-center text-red-600 font-semibold';
+                return;
+            }
+
+            const createBtn = document.getElementById('createClientForm').querySelector('button');
+            const createText = document.getElementById('createClientText');
+            const createSpinner = document.getElementById('createClientSpinner');
+
+            createText.classList.add('hidden');
+            createSpinner.classList.remove('hidden');
+            createBtn.disabled = true;
+
+            try {
+                const privatePackagesRef = collection(db, `artifacts/${appId}/users/${userId}/classPackages`);
+                const newDocRef = await addDoc(privatePackagesRef, {
+                    clientName,
+                    packageName: `${packageSize}-Class Package`,
+                    totalClasses: packageSize,
+                    classesTaught: [], // Initialize with an empty array
+                    createdAt: new Date()
+                });
+                
+                const publicPackagesRef = doc(db, `artifacts/${appId}/public/data/client-packages`, newDocRef.id);
+                await setDoc(publicPackagesRef, {
+                    clientName,
+                    packageName: `${packageSize}-Class Package`,
+                    totalClasses: packageSize,
+                    classesTaught: [], // Initialize with an empty array
+                });
+
+                document.getElementById('generatedId').textContent = newDocRef.id;
+                document.getElementById('newClientIdDisplay').classList.remove('hidden');
+                document.getElementById('newClientStatus').className = 'mt-4 text-center text-green-600 font-semibold';
+                document.getElementById('newClientStatus').textContent = 'Client created successfully! Copy the ID and send it to your client.';
+                document.getElementById('createClientForm').reset();
+            } catch (error) {
+                console.error("Error creating client:", error);
+                document.getElementById('newClientStatus').className = 'mt-4 text-center text-red-600 font-semibold';
+                document.getElementById('newClientStatus').textContent = 'Failed to create client. Please try again.';
+            } finally {
+                createText.classList.remove('hidden');
+                createSpinner.classList.add('hidden');
+                createBtn.disabled = false;
+            }
+        });
+
+        document.getElementById('copyIdBtn').addEventListener('click', () => {
+            const idToCopy = document.getElementById('generatedId').textContent;
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = idToCopy;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            
+            try {
+                document.execCommand('copy');
+                const originalText = document.getElementById('copyIdBtn').textContent;
+                document.getElementById('copyIdBtn').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyIdBtn').textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy ID: ', err);
+            }
+            
+            document.body.removeChild(tempTextarea);
+        });
+    </script>
+</body>
+</html>
+
