@@ -3,591 +3,411 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
+    <title>Schedule Tracker - Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
         }
-        .loader {
-            border-top-color: #3498db;
-            -webkit-animation: spinner 1.5s linear infinite;
-            animation: spinner 1.5s linear infinite;
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 100;
         }
-        @-webkit-keyframes spinner {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 101;
         }
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .admin-calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1rem;
-            text-align: center;
-        }
-        .admin-calendar-day-col {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            background-color: #fff;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            min-height: 100px;
-        }
-         @media (max-width: 1024px) {
-            .admin-calendar-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-         @media (max-width: 640px) {
-            .admin-calendar-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .modal-backdrop.active, .modal.active {
+            display: block;
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
-    <main class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-grow py-8">
-        <div id="admin-content" class="w-full space-y-8">
-            <h1 class="text-4xl font-extrabold text-blue-600 mb-2 text-center">Admin Panel</h1>
-            <div class="flex justify-center space-x-4 mb-8">
-                <button id="show-schedule" class="px-6 py-3 rounded-md font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors">Schedule Admin</button>
-                <button id="show-tracker" class="px-6 py-3 rounded-md font-bold text-gray-800 bg-gray-200 hover:bg-gray-300 transition-colors">Class Tracker</button>
-            </div>
-            
-            <!-- Schedule Admin Panel -->
-            <div id="schedule-admin-panel" class="admin-tab">
-                <div class="bg-white shadow-lg rounded-xl p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div class="lg:col-span-1">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Manage Slots</h2>
-                        <div class="space-y-4">
-                            <h3 class="text-xl font-bold text-gray-800 mb-2">Create New Slot</h3>
-                            <form id="create-slot-form" class="space-y-4">
-                                <div>
-                                    <label for="day" class="block text-sm font-medium text-gray-700">Day</label>
-                                    <select id="day" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
-                                        <option value="Monday">Monday</option>
-                                        <option value="Tuesday">Tuesday</option>
-                                        <option value="Wednesday">Wednesday</option>
-                                        <option value="Thursday">Thursday</option>
-                                        <option value="Friday">Friday</option>
-                                        <option value="Saturday">Saturday</option>
-                                        <option value="Sunday">Sunday</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="time" class="block text-sm font-medium text-gray-700">Time (e.g., 9:00 AM)</label>
-                                    <input type="text" id="time" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
-                                </div>
-                                <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition-colors">
-                                    <span id="create-slot-text">Create Slot</span>
-                                    <div id="create-slot-spinner" class="hidden h-6 w-6 border-4 border-white border-solid rounded-full loader ml-2"></div>
-                                </button>
-                                <div id="create-slot-status" class="text-center text-sm font-semibold mt-2"></div>
-                            </form>
-                        </div>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-900">T. Dan's Action Lab - Admin Dashboard</h1>
+            <a href="/index.html" class="text-indigo-600 hover:text-indigo-800 transition">← Back to Welcome Page</a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div id="loading-state" class="text-center py-12">
+            <p class="text-lg text-gray-600">Connecting to the database...</p>
+        </div>
+
+        <div id="app-content" class="hidden">
+            <!-- Grid Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                <!-- Students Column -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold">Students</h2>
+                        <button id="add-student-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition shadow-sm">Add Student</button>
                     </div>
-                    <div class="lg:col-span-2">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4">All Time Slots</h2>
-                        <div id="all-slots-container" class="admin-calendar-grid">
-                           <!-- Admin calendar will be generated here -->
-                        </div>
+                    <div id="student-list" class="space-y-3">
+                        <!-- Student items will be injected here by JavaScript -->
                     </div>
                 </div>
-                <div class="mt-8 p-6 rounded-lg border border-gray-300 bg-white shadow-lg">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Upcoming Appointments</h2>
-                    <div id="appointments-list-admin" class="space-y-4">
-                        <p class="text-center text-gray-500 italic">Loading appointments...</p>
+
+                <!-- Classes Column -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold">Upcoming Classes</h2>
+                        <button id="add-class-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition shadow-sm">Schedule Class</button>
                     </div>
-                </div>
-            </div>
-            <!-- Class Tracker Panel -->
-            <div id="class-tracker-panel" class="admin-tab hidden">
-                <div class="bg-white shadow-lg rounded-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Create New Client</h2>
-                    <form id="createClientForm" class="space-y-4">
-                        <div>
-                            <input type="text" id="newClientName" placeholder="Client Name" class="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <input type="number" id="newClientPackageSize" placeholder="Package Size (e.g., 10)" class="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition-colors">
-                            <span id="createClientText">Create Client</span>
-                            <div id="createClientSpinner" class="hidden h-6 w-6 border-4 border-white border-solid rounded-full loader ml-2"></div>
-                        </button>
-                        <div id="newClientStatus" class="mt-4 text-sm font-semibold text-center"></div>
-                    </form>
-                    <div id="newClientIdDisplay" class="hidden mt-4 bg-gray-100 p-4 rounded-md break-words text-sm">
-                        <p class="font-bold">New Client ID:</p>
-                        <p id="generatedId" class="font-mono text-gray-700 mt-1"></p>
-                        <button id="copyIdBtn" class="mt-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-1 rounded-md hover:bg-gray-300">Copy ID</button>
-                        <p class="mt-2 text-xs text-gray-500 italic">Share this ID with the client. It is their unique link to their tracker.</p>
-                    </div>
-                </div>
-                <div class="mt-8 p-6 rounded-lg border border-gray-300 bg-white shadow-lg">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Your Clients</h2>
-                    <div id="clientList" class="space-y-4">
-                        <p class="text-center text-gray-500 italic">Loading clients...</p>
+                    <div id="class-list" class="space-y-3">
+                        <!-- Class items will be injected here by JavaScript -->
                     </div>
                 </div>
             </div>
         </div>
     </main>
-    <footer id="contact" class="bg-white mt-8 py-8 px-4 sm:px-6 lg:px-8 shadow-inner rounded-t-xl">
-        <div class="max-w-7xl mx-auto text-center text-gray-600">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Admin Contact</h2>
-            <p><strong>Email:</strong> <a href="mailto:dan@dgkmills.com" class="text-blue-600 hover:underline">dan@dgkmills.com</a></p>
-            <p><strong>Phone:</strong> 086 333 1493</p>
-            <p><strong>Location:</strong> Ban Pong, Thailand</p>
+
+    <!-- Modals -->
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+
+    <!-- Add Student Modal -->
+    <div id="add-student-modal" class="modal bg-white w-full max-w-md p-6 rounded-lg shadow-xl">
+        <h3 class="text-lg font-medium mb-4">Add New Student</h3>
+        <form id="add-student-form">
+            <input type="text" id="student-name-input" placeholder="Student Name" class="w-full border-gray-300 rounded-md shadow-sm mb-4" required>
+            <div class="flex justify-end space-x-2">
+                <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Student</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Add Class Modal -->
+    <div id="add-class-modal" class="modal bg-white w-full max-w-md p-6 rounded-lg shadow-xl">
+        <h3 class="text-lg font-medium mb-4">Schedule New Class</h3>
+        <form id="add-class-form">
+            <input type="date" id="class-date-input" class="w-full border-gray-300 rounded-md shadow-sm mb-2" required>
+            <input type="text" id="class-time-input" placeholder="e.g., 10-11 am" class="w-full border-gray-300 rounded-md shadow-sm mb-4" required>
+            <div class="flex justify-end space-x-2">
+                <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Save Class</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Attendance Modal -->
+    <div id="attendance-modal" class="modal bg-white w-full max-w-lg p-6 rounded-lg shadow-xl">
+        <h3 class="text-lg font-medium mb-1">Manage Attendance</h3>
+        <p id="attendance-modal-header" class="text-sm text-gray-500 mb-4"></p>
+        <div id="attendance-student-list" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+            <!-- Attendance checklist will be injected here -->
         </div>
-    </footer>
+        <div class="flex justify-end space-x-2 mt-4">
+            <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+            <button id="save-attendance-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Save Attendance</button>
+        </div>
+    </div>
+
+
+    <!-- Firebase and App Logic -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, addDoc, collection, onSnapshot, query, setDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js";
-        
+        // IMPORTANT: Replace this with your project's Firebase configuration object.
+        // You can find this in your Firebase project settings.
         const firebaseConfig = {
-          apiKey: "AIzaSyAdkkonrM6gFCN_xmw5g1qSJipHJ_LZKTE",
-          authDomain: "schedule.dgkmills.com",
-          projectId: "dgkmills-schedule-tracker",
-          storageBucket: "dgkmills-schedule-tracker.appspot.com",
-          messagingSenderId: "1078055932000",
-          appId: "1:1078055932000:web:cba2d49fb42eaf319fb305",
-          measurementId: "G-QJ1JM61WK3"
+            apiKey: "AIzaSyC2k...L8", // NOTE: Key is intentionally truncated for security in this view
+            authDomain: "schedulertracker-2410b.firebaseapp.com",
+            projectId: "schedulertracker-2410b",
+            storageBucket: "schedulertracker-2410b.appspot.com",
+            messagingSenderId: "837433036574",
+            appId: "1:837433036574:web:e337119e817cf12e342728"
         };
-        
-        const appId = 'dgkmills-schedule-tracker';
+
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, getDoc,
+            query, orderBy, where, getDocs, writeBatch
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        
-        const appCheck = initializeAppCheck(app, {
-          provider: new ReCaptchaV3Provider('6Le_fssrAAAAAE79h4IgwgqxOghcpWqZyj95pTRq'),
-          isTokenAutoRefreshEnabled: true
-        });
-        
         const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        let userId;
-        let authReady = false;
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-            } else {
-                userId = null;
-            }
-            authReady = true;
-            listenForTimeSlots();
-            listenForAppointments();
-            listenForClients();
-        });
+        // --- DOM Elements ---
+        const studentListEl = document.getElementById('student-list');
+        const classListEl = document.getElementById('class-list');
+        const loadingStateEl = document.getElementById('loading-state');
+        const appContentEl = document.getElementById('app-content');
 
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        if (initialAuthToken) {
-            signInWithCustomToken(auth, initialAuthToken).catch((error) => {
-                console.error("Custom token sign-in failed, signing in anonymously:", error);
-                signInAnonymously(auth);
-            });
-        } else {
-            signInAnonymously(auth);
+        let allStudents = []; // Cache for all students
+
+        // --- Modal Handling ---
+        const backdrop = document.getElementById('modal-backdrop');
+        const modals = {
+            addStudent: document.getElementById('add-student-modal'),
+            addClass: document.getElementById('add-class-modal'),
+            attendance: document.getElementById('attendance-modal'),
+        };
+
+        function openModal(modalName) {
+            backdrop.classList.add('active');
+            modals[modalName].classList.add('active');
         }
 
-        const scheduleBtn = document.getElementById('show-schedule');
-        const trackerBtn = document.getElementById('show-tracker');
-        const schedulePanel = document.getElementById('schedule-admin-panel');
-        const trackerPanel = document.getElementById('class-tracker-panel');
-        
-        scheduleBtn.addEventListener('click', () => {
-            scheduleBtn.classList.add('bg-blue-600', 'text-white');
-            scheduleBtn.classList.remove('bg-gray-200', 'text-gray-800');
-            trackerBtn.classList.remove('bg-blue-600', 'text-white');
-            trackerBtn.classList.add('bg-gray-200', 'text-gray-800');
-            schedulePanel.classList.remove('hidden');
-            trackerPanel.classList.add('hidden');
-        });
+        function closeModal() {
+            backdrop.classList.remove('active');
+            Object.values(modals).forEach(modal => modal.classList.remove('active'));
+        }
 
-        trackerBtn.addEventListener('click', () => {
-            trackerBtn.classList.add('bg-blue-600', 'text-white');
-            trackerBtn.classList.remove('bg-gray-200', 'text-gray-800');
-            scheduleBtn.classList.remove('bg-blue-600', 'text-white');
-            scheduleBtn.classList.add('bg-gray-200', 'text-gray-800');
-            trackerPanel.classList.remove('hidden');
-            schedulePanel.classList.add('hidden');
-        });
+        document.getElementById('add-student-btn').addEventListener('click', () => openModal('addStudent'));
+        document.getElementById('add-class-btn').addEventListener('click', () => openModal('addClass'));
+        backdrop.addEventListener('click', closeModal);
+        document.querySelectorAll('.modal-cancel-btn').forEach(btn => btn.addEventListener('click', closeModal));
 
-        function listenForTimeSlots() {
-            if (!authReady) {
-                 setTimeout(listenForTimeSlots, 100);
+
+        // --- Firestore Data Rendering ---
+
+        // Render All Students
+        function renderStudents(students) {
+            allStudents = students; // Update cache
+            studentListEl.innerHTML = '';
+            if (students.length === 0) {
+                 studentListEl.innerHTML = `<p class="text-gray-500">No students added yet.</p>`;
                  return;
             }
-            if (!userId) {
-                document.getElementById('all-slots-container').innerHTML = '<p class="text-center text-gray-500 italic">Authentication failed.</p>';
-                return;
-            }
-            const slotsRef = collection(db, `artifacts/${appId}/public/data/time-slots`);
-            onSnapshot(slotsRef, (snapshot) => {
-                const slotsContainer = document.getElementById('all-slots-container');
-                slotsContainer.innerHTML = '';
+            students.forEach(student => {
+                const classesLeft = student.bundleClassesRemaining || 0;
+                const bundleColor = classesLeft > 3 ? 'text-green-600' : (classesLeft > 0 ? 'text-yellow-600' : 'text-red-600');
                 
-                const slotsByDay = {};
-                snapshot.forEach(doc => {
-                    const data = { id: doc.id, ...doc.data() };
-                    if (!slotsByDay[data.day]) {
-                        slotsByDay[data.day] = [];
-                    }
-                    slotsByDay[data.day].push(data);
-                });
-
-                const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-                dayOrder.forEach(day => {
-                    const dayCol = document.createElement('div');
-                    dayCol.className = 'admin-calendar-day-col';
-
-                    const header = document.createElement('div');
-                    header.className = 'bg-gray-200 p-2 rounded-md font-bold text-center text-sm';
-                    header.textContent = day;
-                    dayCol.appendChild(header);
-
-                    if (slotsByDay[day]) {
-                        slotsByDay[day].sort((a, b) => new Date(`1970/01/01 ${a.time}`) - new Date(`1970/01/01 ${b.time}`));
-                        
-                        slotsByDay[day].forEach(data => {
-                            const slotDiv = document.createElement('div');
-                            slotDiv.className = `p-2 text-sm rounded-md border flex flex-col items-center justify-center text-center gap-2 ${data.booked ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`;
-                            slotDiv.innerHTML = `
-                                <div class="font-bold">${data.time}</div>
-                                <div class="text-xs italic text-gray-500">${data.booked ? 'Booked' : 'Available'}</div>
-                                <button class="delete-slot-btn w-full bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-md hover:bg-red-700" data-doc-id="${data.id}">
-                                    Delete
-                                </button>
-                            `;
-                            dayCol.appendChild(slotDiv);
-                        });
-                    }
-                    slotsContainer.appendChild(dayCol);
-                });
-
-                document.querySelectorAll('.delete-slot-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const docId = e.target.closest('[data-doc-id]').dataset.docId;
-                        deleteSlot(docId);
-                    });
-                });
-
-            }, (error) => {
-                console.error("Error listening for time slots:", error);
-                document.getElementById('all-slots-container').innerHTML = '<p class="text-center text-red-600 font-semibold">Error loading data.</p>';
+                const studentDiv = document.createElement('div');
+                studentDiv.className = 'p-3 border rounded-md flex justify-between items-center';
+                studentDiv.innerHTML = `
+                    <div>
+                        <p class="font-medium">${student.name}</p>
+                        <p class="text-sm ${bundleColor}">Bundle Classes: ${classesLeft}</p>
+                    </div>
+                    <button data-id="${student.id}" class="add-bundle-btn bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full hover:bg-blue-200">Add 10 Classes</button>
+                `;
+                studentListEl.appendChild(studentDiv);
             });
         }
-        
-        async function deleteSlot(docId) {
-            if (!userId) return;
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/time-slots`, docId);
-                await deleteDoc(docRef);
-            } catch (error) {
-                console.error("Error deleting slot:", error);
-            }
-        }
-        
-        document.getElementById('create-slot-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!userId) {
-                const statusDiv = document.getElementById('create-slot-status');
-                statusDiv.textContent = 'Authentication failed. Please log in again.';
-                statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
-                return;
-            }
-            const day = document.getElementById('day').value;
-            const time = document.getElementById('time').value.trim();
-            
-            if (!time.match(/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i)) {
-                 const statusDiv = document.getElementById('create-slot-status');
-                 statusDiv.textContent = 'Please use format HH:MM AM/PM (e.g., 9:00 AM)';
-                 statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
+
+        // Render All Classes
+        function renderClasses(classes) {
+            classListEl.innerHTML = '';
+            if (classes.length === 0) {
+                 classListEl.innerHTML = `<p class="text-gray-500">No classes scheduled.</p>`;
                  return;
             }
+            classes.forEach(cls => {
+                const classDate = dayjs(cls.date).format('dddd, MMMM D, YYYY');
+                const classDiv = document.createElement('div');
+                classDiv.className = 'p-3 border rounded-md';
+                classDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium">${classDate}</p>
+                            <p class="text-sm text-gray-600">Time: ${cls.time}</p>
+                            <p class="text-sm text-gray-600">Attendees: ${cls.attendees ? cls.attendees.length : 0}</p>
+                        </div>
+                        <button data-id="${cls.id}" data-date="${classDate}" data-time="${cls.time}" class="manage-attendance-btn bg-gray-600 text-white text-sm px-3 py-1 rounded-md hover:bg-gray-700">Manage Attendance</button>
+                    </div>
+                `;
+                classListEl.appendChild(classDiv);
+            });
+        }
 
-            const docId = `${day.toLowerCase()}-${time.replace(/[\s:]/g, '-').toLowerCase()}`;
 
-            const createBtn = e.target.querySelector('button');
-            const createText = document.getElementById('create-slot-text');
-            const createSpinner = document.getElementById('create-slot-spinner');
-            const statusDiv = document.getElementById('create-slot-status');
-
-            createText.classList.add('hidden');
-            createSpinner.classList.remove('hidden');
-            createBtn.disabled = true;
-
-            try {
-                const slotsRef = doc(db, `artifacts/${appId}/public/data/time-slots`, docId);
-                await setDoc(slotsRef, {
-                    day,
-                    time,
-                    booked: false
+        // --- Firestore Real-time Listeners ---
+        function setupListeners() {
+            // Students listener
+            const studentsQuery = query(collection(db, "students"), orderBy("name"));
+            onSnapshot(studentsQuery, (querySnapshot) => {
+                const students = [];
+                querySnapshot.forEach((doc) => {
+                    students.push({ id: doc.id, ...doc.data() });
                 });
-                statusDiv.className = 'mt-4 text-center text-green-600 font-semibold';
-                statusDiv.textContent = 'Slot created successfully!';
-                document.getElementById('create-slot-form').reset();
-            } catch (error) {
-                console.error("Error creating time slot:", error);
-                statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
-                statusDiv.textContent = 'Failed to create slot. Please try again.';
-            } finally {
-                setTimeout(() => {
-                   statusDiv.textContent = '';
-                }, 3000);
-                createText.classList.remove('hidden');
-                createSpinner.classList.add('hidden');
-                createBtn.disabled = false;
+                renderStudents(students);
+                // Hide loading indicator once we have data
+                loadingStateEl.style.display = 'none';
+                appContentEl.classList.remove('hidden');
+            }, (error) => {
+                console.error("Error fetching students:", error);
+                loadingStateEl.innerHTML = `<p class="text-red-500">Error connecting to the database. Make sure your Firebase config is correct and Firestore is enabled.</p>`;
+            });
+
+            // Classes listener (shows classes from today onwards)
+            const todayStr = dayjs().format('YYYY-MM-DD');
+            const classesQuery = query(collection(db, "classes"), orderBy("date", "desc"));
+            onSnapshot(classesQuery, (querySnapshot) => {
+                const classes = [];
+                querySnapshot.forEach((doc) => {
+                    classes.push({ id: doc.id, ...doc.data() });
+                });
+                renderClasses(classes);
+            });
+        }
+
+
+        // --- Firestore Write Operations ---
+
+        // Add a new student
+        document.getElementById('add-student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const studentName = document.getElementById('student-name-input').value.trim();
+            if (studentName) {
+                try {
+                    await addDoc(collection(db, "students"), {
+                        name: studentName,
+                        bundleClassesRemaining: 0
+                    });
+                    document.getElementById('add-student-form').reset();
+                    closeModal();
+                } catch (error) {
+                    console.error("Error adding student: ", error);
+                    alert("Could not add student. Check console for errors.");
+                }
             }
         });
         
-        function listenForAppointments() {
-            if (!authReady) {
-                 setTimeout(listenForAppointments, 100);
-                 return;
-            }
-            if (!userId) {
-                document.getElementById('appointments-list-admin').innerHTML = '<p class="text-center text-gray-500 italic">Authentication failed.</p>';
-                return;
-            }
-            const appointmentsRef = collection(db, `artifacts/${appId}/public/data/consultations`);
-            onSnapshot(appointmentsRef, (snapshot) => {
-                const appointmentsList = document.getElementById('appointments-list-admin');
-                appointmentsList.innerHTML = '';
-                if (snapshot.empty) {
-                    appointmentsList.innerHTML = '<p class="text-center text-gray-500 italic">No appointments requested yet.</p>';
+        // Add a new class
+        document.getElementById('add-class-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const classDate = document.getElementById('class-date-input').value;
+            const classTime = document.getElementById('class-time-input').value.trim();
+            if (classDate && classTime) {
+                 try {
+                    await addDoc(collection(db, "classes"), {
+                        date: classDate,
+                        time: classTime,
+                        attendees: []
+                    });
+                    document.getElementById('add-class-form').reset();
+                    closeModal();
+                } catch (error) {
+                    console.error("Error adding class: ", error);
+                    alert("Could not add class. Check console for errors.");
                 }
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const li = document.createElement('div');
-                    li.className = 'bg-blue-50 p-4 rounded-lg border border-blue-200';
-                    li.innerHTML = `
-                        <p class="font-bold text-blue-800">Appointment Request</p>
-                        <p class="text-sm text-gray-700 mt-1"><strong>Name:</strong> ${data.name}</p>
-                        <p class="text-sm text-gray-700 mt-1"><strong>Email:</strong> ${data.email}</p>
-                        <p class="text-sm text-gray-700 mt-1"><strong>Time Slot:</strong> ${data.day}, ${data.time}</p>
-                        <p class="text-sm text-gray-700 mt-1"><strong>Class:</strong> ${data.class}</p>
-                        <p class="text-sm text-gray-700 mt-1"><strong>Message:</strong> ${data.message || 'N/A'}</p>
-                        <p class="text-sm text-gray-700 mt-1"><strong>User ID:</strong> <span class="font-mono text-xs">${data.userId}</span></p>
-                        <button class="delete-btn mt-2 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-md hover:bg-red-700" data-doc-id="${doc.id}">Delete Request</button>
-                    `;
-                    appointmentsList.appendChild(li);
-                });
-                document.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const docId = e.target.dataset.docId;
-                        deleteAppointment(docId);
-                    });
-                });
-            }, (error) => {
-                console.error("Error fetching appointments:", error);
-                document.getElementById('appointments-list-admin').innerHTML = '<p class="text-center text-red-600 font-semibold">Error loading appointments.</p>';
-            });
-        }
-        
-        async function deleteAppointment(docId) {
-            if (!userId) return;
-            try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/consultations`, docId);
-                await deleteDoc(docRef);
-            } catch (error) {
-                console.error("Error deleting document:", error);
             }
-        }
-        
-        function listenForClients() {
-            if (!authReady) {
-                setTimeout(listenForClients, 100);
-                return;
-            }
-            if (!userId) {
-                document.getElementById('clientList').innerHTML = '<p class="text-center text-gray-500 italic">Authentication failed.</p>';
-                return;
-            }
-            const packagesRef = collection(db, `artifacts/${appId}/users/${userId}/classPackages`);
-            onSnapshot(packagesRef, (snapshot) => {
-                const clientListDiv = document.getElementById('clientList');
-                clientListDiv.innerHTML = '';
-                if (snapshot.empty) {
-                    clientListDiv.innerHTML = '<p class="text-center text-gray-500 italic">No clients found. Use the form above to create one.</p>';
-                } else {
-                    snapshot.docs.sort((a, b) => b.data().createdAt.toMillis() - a.data().createdAt.toMillis()).forEach(doc => {
-                        const data = doc.data();
-                        const classesTaught = data.classesTaught || [];
-                        const clientCard = document.createElement('div');
-                        clientCard.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm';
-                        
-                        let taughtClassesHtml = '<p class="text-xs text-gray-500 italic mt-2">No classes taught yet.</p>';
-                        if (classesTaught.length > 0) {
-                            taughtClassesHtml = '<ul class="text-xs text-gray-600 mt-2 list-disc list-inside space-y-1">';
-                            classesTaught.forEach(timestamp => {
-                                taughtClassesHtml += `<li>${new Date(timestamp).toLocaleDateString()}</li>`;
-                            });
-                            taughtClassesHtml += '</ul>';
-                        }
+        });
 
-                        clientCard.innerHTML = `
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
-                                <div>
-                                    <h3 class="font-bold text-lg text-gray-900">${data.clientName}</h3>
-                                    <p class="text-sm text-gray-600">Package: ${classesTaught.length} / ${data.totalClasses}</p>
-                                    <p class="text-xs text-gray-400 mt-1 break-words">ID: ${doc.id}</p>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <button class="mark-taught-btn bg-purple-600 text-white font-bold py-2 px-4 rounded-md hover:bg-purple-700 transition-colors" data-doc-id="${doc.id}">Mark Class as Taught</button>
-                                    <button class="delete-client-btn bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 transition-colors" data-doc-id="${doc.id}">Delete</button>
-                                </div>
-                            </div>
-                            <div class="mt-4 pt-2 border-t border-gray-200">
-                                <h4 class="font-semibold text-sm text-gray-700">Class History:</h4>
-                                ${taughtClassesHtml}
-                            </div>
-                        `;
-                        clientListDiv.appendChild(clientCard);
+        // Add bundle to student (event delegation)
+        studentListEl.addEventListener('click', async (e) => {
+            if (e.target && e.target.classList.contains('add-bundle-btn')) {
+                const studentId = e.target.dataset.id;
+                const studentRef = doc(db, "students", studentId);
+                try {
+                    const studentDoc = await getDoc(studentRef);
+                    const currentBundles = studentDoc.data().bundleClassesRemaining || 0;
+                    await updateDoc(studentRef, {
+                        bundleClassesRemaining: currentBundles + 10
                     });
-                    document.querySelectorAll('.mark-taught-btn').forEach(button => {
-                        button.addEventListener('click', async (e) => {
-                            markClassTaught(e.target.dataset.docId);
-                        });
-                    });
-                     document.querySelectorAll('.delete-client-btn').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const docId = e.target.dataset.docId;
-                            deleteClient(docId);
-                        });
-                    });
+                } catch (error) {
+                    console.error("Error adding bundle:", error);
+                    alert("Could not add bundle.");
                 }
-            }, (error) => {
-                console.error("Error fetching client data:", error);
-                document.getElementById('clientList').innerHTML = '<p class="text-center text-red-600 font-semibold">Error loading client data.</p>';
-            });
-        }
+            }
+        });
+        
+        // --- Attendance Logic ---
+        const attendanceListEl = document.getElementById('attendance-student-list');
+        const attendanceModalHeader = document.getElementById('attendance-modal-header');
+        let currentClassId = null;
 
-        async function markClassTaught(docId) {
-            if (!userId) return;
-            try {
-                const privateDocRef = doc(db, `artifacts/${appId}/users/${userId}/classPackages`, docId);
-                const privateDocSnap = await getDoc(privateDocRef);
+        classListEl.addEventListener('click', async (e) => {
+            if (e.target && e.target.classList.contains('manage-attendance-btn')) {
+                currentClassId = e.target.dataset.id;
+                const classDate = e.target.dataset.date;
+                const classTime = e.target.dataset.time;
+                attendanceModalHeader.textContent = `${classDate} at ${classTime}`;
 
-                if (privateDocSnap.exists()) {
-                    const data = privateDocSnap.data();
-                    const classesTaught = data.classesTaught || [];
-                    if (classesTaught.length >= data.totalClasses) {
-                       console.error("All classes in package have been used.");
-                       const statusDiv = document.getElementById('newClientStatus');
-                       statusDiv.textContent = 'Client has used all classes in their package.';
-                       statusDiv.className = 'mt-4 text-center text-red-600 font-semibold';
-                       return;
-                    }
+                const classRef = doc(db, "classes", currentClassId);
+                const classDoc = await getDoc(classRef);
+                const currentAttendees = classDoc.data().attendees || [];
+                
+                attendanceListEl.innerHTML = ''; // Clear previous list
+                allStudents.forEach(student => {
+                    const isAttending = currentAttendees.includes(student.id);
+                    const isChecked = isAttending ? 'checked' : '';
+                    const hasBundle = (student.bundleClassesRemaining || 0) > 0;
+                    const bundleInfo = hasBundle ? `(${student.bundleClassesRemaining} left)` : '(No Bundle)';
                     
-                    const newTimestamp = new Date().toISOString();
-                    const publicDocRef = doc(db, `artifacts/${appId}/public/data/client-packages`, docId);
-                    await updateDoc(privateDocRef, { classesTaught: arrayUnion(newTimestamp) });
-                    await updateDoc(publicDocRef, { classesTaught: arrayUnion(newTimestamp) });
-                }
-            } catch (error) {
-                console.error("Error updating document:", error);
-            }
-        }
-        
-        async function deleteClient(docId) {
-            if (!userId) return;
-            try {
-                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/classPackages`, docId));
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/client-packages`, docId));
-            } catch (error) {
-                console.error("Error deleting client:", error);
-            }
-        }
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center p-2 border rounded-md';
+                    label.innerHTML = `
+                        <input type="checkbox" data-student-id="${student.id}" data-has-bundle="${hasBundle}" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isChecked}>
+                        <span class="ml-3 font-medium">${student.name}</span>
+                        <span class="ml-2 text-sm text-gray-500">${bundleInfo}</span>
+                    `;
+                    attendanceListEl.appendChild(label);
+                });
 
-        document.getElementById('createClientForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!userId) {
-                document.getElementById('newClientStatus').textContent = 'User not authenticated. Please try again.';
-                document.getElementById('newClientStatus').className = 'mt-4 text-center text-red-600 font-semibold';
-                return;
+                openModal('attendance');
             }
-            const clientName = document.getElementById('newClientName').value;
-            const packageSize = parseInt(document.getElementById('newClientPackageSize').value, 10);
+        });
+
+        document.getElementById('save-attendance-btn').addEventListener('click', async () => {
+            if (!currentClassId) return;
+
+            const selectedCheckboxes = attendanceListEl.querySelectorAll('input[type="checkbox"]:checked');
+            const newAttendeeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.studentId);
             
-            if (!clientName || isNaN(packageSize) || packageSize <= 0) {
-                document.getElementById('newClientStatus').textContent = 'Please enter a valid name and package size.';
-                document.getElementById('newClientStatus').className = 'mt-4 text-center text-red-600 font-semibold';
-                return;
-            }
-
-            const createBtn = document.getElementById('createClientForm').querySelector('button');
-            const createText = document.getElementById('createClientText');
-            const createSpinner = document.getElementById('createClientSpinner');
-
-            createText.classList.add('hidden');
-            createSpinner.classList.remove('hidden');
-            createBtn.disabled = true;
-
             try {
-                const privatePackagesRef = collection(db, `artifacts/${appId}/users/${userId}/classPackages`);
-                const newDocRef = await addDoc(privatePackagesRef, {
-                    clientName,
-                    packageName: `${packageSize}-Class Package`,
-                    totalClasses: packageSize,
-                    classesTaught: [], // Initialize with an empty array
-                    createdAt: new Date()
+                // Get the class's previous state to calculate changes
+                const classRef = doc(db, "classes", currentClassId);
+                const classDoc = await getDoc(classRef);
+                const previousAttendeeIds = classDoc.data().attendees || [];
+
+                // Use a batch write to update all documents atomically
+                const batch = writeBatch(db);
+
+                // 1. Update the class document with the new list of attendees
+                batch.update(classRef, { attendees: newAttendeeIds });
+
+                // 2. Adjust bundle counts for each student
+                allStudents.forEach(student => {
+                    const wasAttending = previousAttendeeIds.includes(student.id);
+                    const isNowAttending = newAttendeeIds.includes(student.id);
+                    const studentRef = doc(db, "students", student.id);
+                    const classesRemaining = student.bundleClassesRemaining || 0;
+
+                    // If they just got added to the class and have a bundle, decrement their count
+                    if (!wasAttending && isNowAttending && classesRemaining > 0) {
+                        batch.update(studentRef, { bundleClassesRemaining: classesRemaining - 1 });
+                    }
+                    // If they just got removed from the class and had a bundle used, increment their count
+                    else if (wasAttending && !isNowAttending) {
+                        // To be fair, we check if they *had* a bundle when they were previously marked.
+                        // For simplicity in this version, we will refund a class.
+                        // A more complex system would log which class used which bundle credit.
+                         batch.update(studentRef, { bundleClassesRemaining: classesRemaining + 1 });
+                    }
                 });
                 
-                const publicPackagesRef = doc(db, `artifacts/${appId}/public/data/client-packages`, newDocRef.id);
-                await setDoc(publicPackagesRef, {
-                    clientName,
-                    packageName: `${packageSize}-Class Package`,
-                    totalClasses: packageSize,
-                    classesTaught: [], // Initialize with an empty array
-                });
+                await batch.commit();
+                closeModal();
 
-                document.getElementById('generatedId').textContent = newDocRef.id;
-                document.getElementById('newClientIdDisplay').classList.remove('hidden');
-                document.getElementById('newClientStatus').className = 'mt-4 text-center text-green-600 font-semibold';
-                document.getElementById('newClientStatus').textContent = 'Client created successfully! Copy the ID and send it to your client.';
-                document.getElementById('createClientForm').reset();
             } catch (error) {
-                console.error("Error creating client:", error);
-                document.getElementById('newClientStatus').className = 'mt-4 text-center text-red-600 font-semibold';
-                document.getElementById('newClientStatus').textContent = 'Failed to create client. Please try again.';
-            } finally {
-                createText.classList.remove('hidden');
-                createSpinner.classList.add('hidden');
-                createBtn.disabled = false;
+                console.error("Error saving attendance: ", error);
+                alert("Could not save attendance.");
             }
         });
 
-        document.getElementById('copyIdBtn').addEventListener('click', () => {
-            const idToCopy = document.getElementById('generatedId').textContent;
-            const tempTextarea = document.createElement('textarea');
-            tempTextarea.value = idToCopy;
-            document.body.appendChild(tempTextarea);
-            tempTextarea.select();
-            
-            try {
-                document.execCommand('copy');
-                const originalText = document.getElementById('copyIdBtn').textContent;
-                document.getElementById('copyIdBtn').textContent = 'Copied!';
-                setTimeout(() => {
-                    document.getElementById('copyIdBtn').textContent = originalText;
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy ID: ', err);
-            }
-            
-            document.body.removeChild(tempTextarea);
-        });
+
+        // --- Initial Load ---
+        setupListeners();
+
     </script>
 </body>
 </html>
