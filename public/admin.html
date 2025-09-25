@@ -58,7 +58,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold">Students</h2>
                         <div>
-                             <button id="export-csv-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition shadow-sm mr-2">Export to CSV</button>
+                             <button id="export-students-csv-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition shadow-sm mr-2">Export Students</button>
                             <button id="add-student-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition shadow-sm">Add Student</button>
                         </div>
                     </div>
@@ -71,7 +71,10 @@
                 <div class="bg-white p-6 rounded-lg shadow">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold">Upcoming Classes</h2>
-                        <button id="add-class-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition shadow-sm">Schedule Class</button>
+                        <div>
+                            <button id="export-classes-csv-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition shadow-sm mr-2">Export Classes</button>
+                            <button id="add-class-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition shadow-sm">Schedule Class</button>
+                        </div>
                     </div>
                     <div id="class-list" class="space-y-3">
                         <!-- Class items will be injected here by JavaScript -->
@@ -101,6 +104,13 @@
     <div id="add-class-modal" class="modal bg-white w-full max-w-md p-6 rounded-lg shadow-xl">
         <h3 class="text-lg font-medium mb-4">Schedule New Class</h3>
         <form id="add-class-form">
+            <div class="mb-4">
+                <label for="class-type-select" class="block text-sm font-medium text-gray-700">Class Type</label>
+                <select id="class-type-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="group">Group Class</option>
+                    <option value="private">Private Class</option>
+                </select>
+            </div>
             <input type="date" id="class-date-input" class="w-full border-gray-300 rounded-md shadow-sm mb-2" required>
             <input type="text" id="class-time-input" placeholder="e.g., 10:00 AM - 11:00 AM" class="w-full border-gray-300 rounded-md shadow-sm mb-4" required>
             <div class="flex justify-end space-x-2">
@@ -114,10 +124,10 @@
     <div id="attendance-modal" class="modal bg-white w-full max-w-lg p-6 rounded-lg shadow-xl">
         <h3 class="text-lg font-medium mb-1">Manage Attendance</h3>
         <p id="attendance-modal-header" class="text-sm text-gray-500 mb-4"></p>
-        <div id="attendance-student-list" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+        <div id="attendance-student-list" class="space-y-3 max-h-80 overflow-y-auto pr-2">
             <!-- Attendance checklist will be injected here -->
         </div>
-        <div class="flex justify-end space-x-2 mt-4">
+        <div class="flex justify-end space-x-2 mt-6">
             <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
             <button id="save-attendance-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Save Attendance</button>
         </div>
@@ -148,14 +158,20 @@
           measurementId: "G-QJ1JM61WK3"
         };
         
-        // This ID should match the one used in your index.html to ensure data is read from the correct place
         const appId = 'dgkmills-schedule-tracker';
+
+        // --- Pricing Configuration ---
+        const prices = {
+            groupBundle: 425,
+            groupNoBundle: 500,
+            private: 650
+        };
 
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
             getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, getDoc,
-            query, orderBy, where, getDocs, writeBatch, deleteDoc
+            query, orderBy, deleteDoc, writeBatch
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Initialize Firebase
@@ -163,10 +179,8 @@
         const db = getFirestore(app);
 
         // --- Collection References ---
-        // These paths are updated to match the data structure from your index.html
         const studentsCol = collection(db, `artifacts/${appId}/public/data/students`);
         const classesCol = collection(db, `artifacts/${appId}/public/data/classes`);
-
 
         // --- DOM Elements ---
         const studentListEl = document.getElementById('student-list');
@@ -174,7 +188,8 @@
         const loadingStateEl = document.getElementById('loading-state');
         const appContentEl = document.getElementById('app-content');
 
-        let allStudents = []; // Cache for all students
+        let allStudents = [];
+        let allClasses = [];
 
         // --- Modal Handling ---
         const backdrop = document.getElementById('modal-backdrop');
@@ -195,7 +210,7 @@
         function closeModal() {
             backdrop.classList.remove('active');
             Object.values(modals).forEach(modal => modal.classList.remove('active'));
-            confirmationCallback = null; // Reset callback
+            confirmationCallback = null;
         }
         
         function openConfirmationModal(message, onConfirm) {
@@ -215,12 +230,10 @@
             closeModal();
         });
 
-
         // --- Firestore Data Rendering ---
 
-        // Render All Students
         function renderStudents(students) {
-            allStudents = students; // Update cache
+            allStudents = students;
             studentListEl.innerHTML = '';
             if (students.length === 0) {
                  studentListEl.innerHTML = `<p class="text-gray-500">No students added yet.</p>`;
@@ -246,8 +259,8 @@
             });
         }
 
-        // Render All Classes
         function renderClasses(classes) {
+            allClasses = classes; // Update cache for exporting
             classListEl.innerHTML = '';
             if (classes.length === 0) {
                  classListEl.innerHTML = `<p class="text-gray-500">No classes scheduled.</p>`;
@@ -255,6 +268,19 @@
             }
             classes.forEach(cls => {
                 const classDate = dayjs(cls.date).format('dddd, MMMM D, YYYY');
+                const classTypeDisplay = cls.classType === 'private' ? 'Private Class' : 'Group Class';
+                const classTypeColor = cls.classType === 'private' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800';
+
+                // Calculate gross sales
+                let grossSales = 0;
+                if(cls.attendees && Array.isArray(cls.attendees)){
+                    cls.attendees.forEach(attendee => {
+                        if(attendee.paymentMethod === 'groupBundle') grossSales += prices.groupBundle;
+                        else if(attendee.paymentMethod === 'groupNoBundle') grossSales += prices.groupNoBundle;
+                        else if(attendee.paymentMethod === 'private') grossSales += prices.private;
+                    });
+                }
+                
                 const classDiv = document.createElement('div');
                 classDiv.className = 'p-3 border rounded-md';
                 classDiv.innerHTML = `
@@ -262,11 +288,17 @@
                         <div>
                             <p class="font-medium">${classDate}</p>
                             <p class="text-sm text-gray-600">Time: ${cls.time}</p>
-                            <p class="text-sm text-gray-600">Attendees: ${cls.attendees ? cls.attendees.length : 0}</p>
+                             <div class="flex items-center mt-1">
+                                <span class="text-sm text-gray-600 mr-2">Attendees: ${cls.attendees ? cls.attendees.length : 0}</span>
+                                <span class="text-sm font-semibold text-blue-700">Gross Sales: ${grossSales.toLocaleString()} baht</span>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <button data-id="${cls.id}" data-date="${classDate}" data-time="${cls.time}" class="manage-attendance-btn bg-gray-600 text-white text-sm px-3 py-1 rounded-md hover:bg-gray-700">Manage Attendance</button>
-                            <button data-id="${cls.id}" data-date="${classDate}" class="delete-class-btn bg-red-600 text-white text-sm px-3 py-1 rounded-md hover:bg-red-700">Delete</button>
+                        <div class="text-right">
+                             <div class="flex items-center justify-end space-x-2 mb-2">
+                                <span class="text-xs font-semibold px-2 py-1 rounded-full ${classTypeColor}">${classTypeDisplay}</span>
+                                <button data-id="${cls.id}" data-date="${classDate}" class="delete-class-btn bg-red-600 text-white text-sm px-3 py-1 rounded-md hover:bg-red-700">Delete</button>
+                            </div>
+                            <button data-id="${cls.id}" data-date="${classDate}" data-time="${cls.time}" data-type="${cls.classType || 'group'}" class="manage-attendance-btn bg-gray-600 text-white text-sm px-3 py-2 rounded-md hover:bg-gray-700 w-full">Manage Attendance</button>
                         </div>
                     </div>
                 `;
@@ -277,27 +309,21 @@
 
         // --- Firestore Real-time Listeners ---
         function setupListeners() {
-            // Students listener
             onSnapshot(studentsCol, (querySnapshot) => {
                 const students = [];
-                querySnapshot.forEach((doc) => {
-                    students.push({ id: doc.id, ...doc.data() });
-                });
+                querySnapshot.forEach((doc) => students.push({ id: doc.id, ...doc.data() }));
                 renderStudents(students);
                 loadingStateEl.style.display = 'none';
                 appContentEl.classList.remove('hidden');
             }, (error) => {
                 console.error("Error fetching students:", error);
-                loadingStateEl.innerHTML = `<p class="text-red-500">Error connecting to the database. Make sure your Firebase config is correct and Firestore is enabled.</p>`;
+                loadingStateEl.innerHTML = `<p class="text-red-500">Error: Could not connect to the database.</p>`;
             });
 
-            // Classes listener
             const classesQuery = query(classesCol, orderBy("date", "desc"));
             onSnapshot(classesQuery, (querySnapshot) => {
                 const classes = [];
-                querySnapshot.forEach((doc) => {
-                    classes.push({ id: doc.id, ...doc.data() });
-                });
+                querySnapshot.forEach((doc) => classes.push({ id: doc.id, ...doc.data() }));
                 renderClasses(classes);
             });
         }
@@ -305,7 +331,6 @@
 
         // --- Firestore Write Operations ---
 
-        // Add a new student
         document.getElementById('add-student-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const studentName = document.getElementById('student-name-input').value.trim();
@@ -320,54 +345,52 @@
                     closeModal();
                 } catch (error) {
                     console.error("Error adding student: ", error);
-                    alert("Could not add student. Check console for errors.");
+                    alert("Could not add student.");
                 }
             }
         });
         
-        // Add a new class
         document.getElementById('add-class-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const classDate = document.getElementById('class-date-input').value;
             const classTime = document.getElementById('class-time-input').value.trim();
+            const classType = document.getElementById('class-type-select').value;
             if (classDate && classTime) {
                  try {
                     await addDoc(classesCol, {
                         date: classDate,
                         time: classTime,
+                        classType: classType,
                         attendees: []
                     });
                     document.getElementById('add-class-form').reset();
                     closeModal();
                 } catch (error) {
                     console.error("Error adding class: ", error);
-                    alert("Could not add class. Check console for errors.");
+                    alert("Could not add class.");
                 }
             }
         });
 
-        // Handle Student button clicks (Add Bundle, Delete)
         studentListEl.addEventListener('click', async (e) => {
             const target = e.target;
-            if (target && target.closest('.add-bundle-btn')) {
+            if (target.closest('.add-bundle-btn')) {
                 const studentId = target.closest('.add-bundle-btn').dataset.id;
                 const studentRef = doc(db, studentsCol.path, studentId);
                 try {
                     const studentDoc = await getDoc(studentRef);
                     const currentBundles = studentDoc.data().bundleClassesRemaining || 0;
-                    await updateDoc(studentRef, {
-                        bundleClassesRemaining: currentBundles + 10
-                    });
+                    await updateDoc(studentRef, { bundleClassesRemaining: currentBundles + 10 });
                 } catch (error) {
                     console.error("Error adding bundle:", error);
                     alert("Could not add bundle.");
                 }
             }
-            if (target && target.closest('.delete-student-btn')) {
+            if (target.closest('.delete-student-btn')) {
                  const button = target.closest('.delete-student-btn');
                  const studentId = button.dataset.id;
                  const studentName = button.dataset.name;
-                 openConfirmationModal(`This will permanently delete ${studentName}. This action cannot be undone.`, async () => {
+                 openConfirmationModal(`This will permanently delete ${studentName}.`, async () => {
                      try {
                         await deleteDoc(doc(db, studentsCol.path, studentId));
                      } catch (error) {
@@ -378,69 +401,82 @@
             }
         });
 
-        // Handle Class button clicks (Manage Attendance, Delete)
+        const attendanceListEl = document.getElementById('attendance-student-list');
+        const attendanceModalHeader = document.getElementById('attendance-modal-header');
+        let currentClassId = null;
+
         classListEl.addEventListener('click', async (e) => {
             const target = e.target;
-
-            // Manage Attendance button
-            if (target && target.closest('.manage-attendance-btn')) {
+            if (target.closest('.manage-attendance-btn')) {
                 const button = target.closest('.manage-attendance-btn');
                 currentClassId = button.dataset.id;
-                const classDate = button.dataset.date;
-                const classTime = button.dataset.time;
-                attendanceModalHeader.textContent = `${classDate} at ${classTime}`;
-                
+                attendanceModalHeader.textContent = `${button.dataset.date} at ${button.dataset.time}`;
+                const classType = button.dataset.type;
+
                 const classRef = doc(db, classesCol.path, currentClassId);
                 const classDoc = await getDoc(classRef);
                 const currentAttendees = classDoc.data().attendees || [];
                 
-                attendanceListEl.innerHTML = ''; // Clear previous list
-                allStudents.forEach(student => {
-                    const isAttending = currentAttendees.includes(student.id);
-                    const isChecked = isAttending ? 'checked' : '';
+                attendanceListEl.innerHTML = ''; 
+                allStudents.sort((a,b) => a.name.localeCompare(b.name)).forEach(student => {
+                    const attendanceRecord = currentAttendees.find(a => a.studentId === student.id);
+                    const paymentMethod = attendanceRecord ? attendanceRecord.paymentMethod : '';
+
                     const hasBundle = (student.bundleClassesRemaining || 0) > 0;
                     const bundleInfo = hasBundle ? `(${student.bundleClassesRemaining} left)` : '(No Bundle)';
                     
-                    const label = document.createElement('label');
-                    label.className = 'flex items-center p-2 border rounded-md hover:bg-gray-50';
-                    label.innerHTML = `
-                        <input type="checkbox" data-student-id="${student.id}" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isChecked}>
-                        <span class="ml-3 font-medium">${student.name}</span>
-                        <span class="ml-2 text-sm text-gray-500">${bundleInfo}</span>
+                    const disabledPrivate = classType === 'group' ? 'disabled' : '';
+                    const disabledGroup = classType === 'private' ? 'disabled' : '';
+                    const disabledBundle = classType === 'private' || !hasBundle ? 'disabled' : '';
+
+                    const row = document.createElement('div');
+                    row.className = 'p-3 border rounded-md';
+                    row.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-medium">${student.name}</p>
+                                <p class="text-sm text-gray-500">${bundleInfo}</p>
+                            </div>
+                            <div class="flex space-x-2" data-student-id="${student.id}">
+                                <input type="radio" name="payment-${student.id}" value="groupBundle" id="bundle-${student.id}" ${paymentMethod === 'groupBundle' ? 'checked' : ''} ${disabledBundle}>
+                                <label for="bundle-${student.id}" class="${disabledBundle ? 'text-gray-400' : ''}">Bundle</label>
+                                
+                                <input type="radio" name="payment-${student.id}" value="groupNoBundle" id="no-bundle-${student.id}" ${paymentMethod === 'groupNoBundle' ? 'checked' : ''} ${disabledGroup}>
+                                <label for="no-bundle-${student.id}" class="${disabledGroup ? 'text-gray-400' : ''}">No Bundle</label>
+
+                                <input type="radio" name="payment-${student.id}" value="private" id="private-${student.id}" ${paymentMethod === 'private' ? 'checked' : ''} ${disabledPrivate}>
+                                <label for="private-${student.id}" class="${disabledPrivate ? 'text-gray-400' : ''}">Private</label>
+                            </div>
+                        </div>
                     `;
-                    attendanceListEl.appendChild(label);
+                    attendanceListEl.appendChild(row);
                 });
 
                 openModal('attendance');
             }
             
-            // Delete Class button
-            if (target && target.closest('.delete-class-btn')) {
+            if (target.closest('.delete-class-btn')) {
                 const button = target.closest('.delete-class-btn');
-                const classId = button.dataset.id;
-                const classDate = button.dataset.date;
-                 openConfirmationModal(`This will delete the class on ${classDate} and refund a class credit to all attendees. This cannot be undone.`, async () => {
-                     const classRef = doc(db, classesCol.path, classId);
+                openConfirmationModal(`This will delete the class on ${button.dataset.date} and refund any used bundle credits.`, async () => {
+                     const classRef = doc(db, classesCol.path, button.dataset.id);
                      try {
                         const classDoc = await getDoc(classRef);
                         if (!classDoc.exists()) return;
 
-                        const attendeeIds = classDoc.data().attendees || [];
+                        const attendees = classDoc.data().attendees || [];
                         const batch = writeBatch(db);
 
-                        // Refund class credits
-                        if (attendeeIds.length > 0) {
-                            for (const studentId of attendeeIds) {
-                                const studentRef = doc(db, studentsCol.path, studentId);
-                                const student = allStudents.find(s => s.id === studentId);
+                        if (attendees.length > 0) {
+                           const bundledAttendees = attendees.filter(a => a.paymentMethod === 'groupBundle');
+                           for (const attendee of bundledAttendees) {
+                                const studentRef = doc(db, studentsCol.path, attendee.studentId);
+                                const student = allStudents.find(s => s.id === attendee.studentId);
                                 if (student) {
-                                    const newBundleCount = (student.bundleClassesRemaining || 0) + 1;
-                                    batch.update(studentRef, { bundleClassesRemaining: newBundleCount });
+                                    batch.update(studentRef, { bundleClassesRemaining: (student.bundleClassesRemaining || 0) + 1 });
                                 }
-                            }
+                           }
                         }
                         
-                        // Delete the class
                         batch.delete(classRef);
                         await batch.commit();
 
@@ -452,38 +488,46 @@
             }
         });
         
-        // --- Attendance Logic ---
-        const attendanceListEl = document.getElementById('attendance-student-list');
-        const attendanceModalHeader = document.getElementById('attendance-modal-header');
-        let currentClassId = null;
-
         document.getElementById('save-attendance-btn').addEventListener('click', async () => {
             if (!currentClassId) return;
-
-            const selectedCheckboxes = attendanceListEl.querySelectorAll('input[type="checkbox"]:checked');
-            const newAttendeeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.studentId);
+            
+            const newAttendees = [];
+            const studentRows = attendanceListEl.querySelectorAll('[data-student-id]');
+            studentRows.forEach(row => {
+                const checkedRadio = row.querySelector('input[type="radio"]:checked');
+                if(checkedRadio){
+                    newAttendees.push({
+                        studentId: row.dataset.studentId,
+                        paymentMethod: checkedRadio.value
+                    });
+                }
+            });
             
             try {
                 const classRef = doc(db, classesCol.path, currentClassId);
                 const classDoc = await getDoc(classRef);
-                const previousAttendeeIds = classDoc.data().attendees || [];
+                const previousAttendees = classDoc.data().attendees || [];
                 const batch = writeBatch(db);
 
-                batch.update(classRef, { attendees: newAttendeeIds });
+                batch.update(classRef, { attendees: newAttendees });
 
+                // Compare previous and new state to adjust bundles
                 allStudents.forEach(student => {
-                    const wasAttending = previousAttendeeIds.includes(student.id);
-                    const isNowAttending = newAttendeeIds.includes(student.id);
-                    
-                    if (wasAttending === isNowAttending) return; // No change for this student
+                    const prevRecord = previousAttendees.find(a => a.studentId === student.id);
+                    const newRecord = newAttendees.find(a => a.studentId === student.id);
+
+                    const wasBundle = prevRecord && prevRecord.paymentMethod === 'groupBundle';
+                    const isBundle = newRecord && newRecord.paymentMethod === 'groupBundle';
+
+                    if (wasBundle === isBundle) return; // No change needed
 
                     const studentRef = doc(db, studentsCol.path, student.id);
                     const classesRemaining = student.bundleClassesRemaining || 0;
-
-                    if (!wasAttending && isNowAttending && classesRemaining > 0) {
+                    
+                    if (!wasBundle && isBundle) { // Just used a bundle
                         batch.update(studentRef, { bundleClassesRemaining: classesRemaining - 1 });
                     }
-                    else if (wasAttending && !isNowAttending) {
+                    else if (wasBundle && !isBundle) { // Refund a bundle
                          batch.update(studentRef, { bundleClassesRemaining: classesRemaining + 1 });
                     }
                 });
@@ -497,17 +541,17 @@
             }
         });
 
-        // --- Export to CSV Logic ---
-        document.getElementById('export-csv-btn').addEventListener('click', () => {
+        // --- CSV Export Logic ---
+        document.getElementById('export-students-csv-btn').addEventListener('click', () => {
             if (allStudents.length === 0) {
                 alert("No student data to export.");
                 return;
             }
 
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Student Name,Remaining Bundle Classes\r\n"; // CSV Header
+            csvContent += "Student Name,Remaining Bundle Classes\r\n";
 
-            allStudents.forEach(student => {
+            allStudents.sort((a,b) => a.name.localeCompare(b.name)).forEach(student => {
                 const row = `"${student.name}",${student.bundleClassesRemaining || 0}`;
                 csvContent += row + "\r\n";
             });
@@ -521,6 +565,77 @@
             link.click();
             document.body.removeChild(link);
         });
+        
+        document.getElementById('export-classes-csv-btn').addEventListener('click', () => {
+            if (allClasses.length === 0) {
+                alert("No class data to export.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Class Date,Class Time,Class Type,Student Name,Payment Method,Amount Paid (baht)\r\n";
+
+            const sortedClasses = [...allClasses].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            sortedClasses.forEach(cls => {
+                if (cls.attendees && cls.attendees.length > 0) {
+                    // Sort attendees alphabetically for consistent export order
+                    const sortedAttendees = [...cls.attendees].sort((a, b) => {
+                        const studentA = allStudents.find(s => s.id === a.studentId);
+                        const studentB = allStudents.find(s => s.id === b.studentId);
+                        if(studentA && studentB) return studentA.name.localeCompare(studentB.name);
+                        return 0;
+                    });
+
+                    sortedAttendees.forEach(attendee => {
+                        const student = allStudents.find(s => s.id === attendee.studentId);
+                        const studentName = student ? student.name : 'Unknown Student';
+                        
+                        let paymentMethodDisplay = '';
+                        let amountPaid = 0;
+
+                        switch (attendee.paymentMethod) {
+                            case 'groupBundle':
+                                paymentMethodDisplay = 'Bundle';
+                                amountPaid = prices.groupBundle;
+                                break;
+                            case 'groupNoBundle':
+                                paymentMethodDisplay = 'No Bundle';
+                                amountPaid = prices.groupNoBundle;
+                                break;
+                            case 'private':
+                                paymentMethodDisplay = 'Private';
+                                amountPaid = prices.private;
+                                break;
+                            default:
+                                paymentMethodDisplay = 'N/A';
+                        }
+                        
+                        const classTypeDisplay = cls.classType === 'private' ? 'Private' : 'Group';
+                        
+                        const row = [
+                            `"${dayjs(cls.date).format('YYYY-MM-DD')}"`,
+                            `"${cls.time}"`,
+                            `"${classTypeDisplay}"`,
+                            `"${studentName}"`,
+                            `"${paymentMethodDisplay}"`,
+                            amountPaid
+                        ].join(',');
+                        
+                        csvContent += row + "\r\n";
+                    });
+                }
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            const formattedDate = dayjs().format('YYYY-MM-DD');
+            link.setAttribute("download", `class_export_${formattedDate}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
 
         // --- Initial Load ---
         setupListeners();
@@ -528,3 +643,4 @@
     </script>
 </body>
 </html>
+
