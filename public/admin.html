@@ -57,7 +57,10 @@
                 <div class="bg-white p-6 rounded-lg shadow">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold">Students</h2>
-                        <button id="add-student-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition shadow-sm">Add Student</button>
+                        <div>
+                             <button id="export-csv-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition shadow-sm mr-2">Export to CSV</button>
+                            <button id="add-student-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition shadow-sm">Add Student</button>
+                        </div>
                     </div>
                     <div id="student-list" class="space-y-3">
                         <!-- Student items will be injected here by JavaScript -->
@@ -86,6 +89,7 @@
         <h3 class="text-lg font-medium mb-4">Add New Student</h3>
         <form id="add-student-form">
             <input type="text" id="student-name-input" placeholder="Student Name" class="w-full border-gray-300 rounded-md shadow-sm mb-4" required>
+             <input type="number" id="student-bundle-input" placeholder="Initial Bundle Classes (e.g., 10)" class="w-full border-gray-300 rounded-md shadow-sm mb-4" required>
             <div class="flex justify-end space-x-2">
                 <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
                 <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Student</button>
@@ -98,7 +102,7 @@
         <h3 class="text-lg font-medium mb-4">Schedule New Class</h3>
         <form id="add-class-form">
             <input type="date" id="class-date-input" class="w-full border-gray-300 rounded-md shadow-sm mb-2" required>
-            <input type="text" id="class-time-input" placeholder="e.g., 10-11 am" class="w-full border-gray-300 rounded-md shadow-sm mb-4" required>
+            <input type="text" id="class-time-input" placeholder="e.g., 10:00 AM - 11:00 AM" class="w-full border-gray-300 rounded-md shadow-sm mb-4" required>
             <div class="flex justify-end space-x-2">
                 <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
                 <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Save Class</button>
@@ -118,31 +122,51 @@
             <button id="save-attendance-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Save Attendance</button>
         </div>
     </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal bg-white w-full max-w-sm p-6 rounded-lg shadow-xl text-center">
+        <h3 class="text-lg font-medium mb-4">Are you sure?</h3>
+        <p id="confirmation-message" class="text-gray-600 mb-6"></p>
+        <div class="flex justify-center space-x-4">
+            <button id="confirm-cancel-btn" class="bg-gray-200 px-6 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+            <button id="confirm-action-btn" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">Delete</button>
+        </div>
+    </div>
 
 
     <!-- Firebase and App Logic -->
     <script type="module">
-        // IMPORTANT: Replace this with your project's Firebase configuration object.
-        // You can find this in your Firebase project settings.
+        // IMPORTANT: This configuration is copied from your index.html to ensure
+        // this admin panel connects to the SAME database as your public website.
         const firebaseConfig = {
-            apiKey: "AIzaSyC2k...L8", // NOTE: Key is intentionally truncated for security in this view
-            authDomain: "schedulertracker-2410b.firebaseapp.com",
-            projectId: "schedulertracker-2410b",
-            storageBucket: "schedulertracker-2410b.appspot.com",
-            messagingSenderId: "837433036574",
-            appId: "1:837433036574:web:e337119e817cf12e342728"
+          apiKey: "AIzaSyAdkkonrM6gFCN_xmw5g1qSJipHJ_LZKTE",
+          authDomain: "schedule.dgkmills.com",
+          projectId: "dgkmills-schedule-tracker",
+          storageBucket: "dgkmills-schedule-tracker.appspot.com",
+          messagingSenderId: "1078055932000",
+          appId: "1:1078055932000:web:cba2d49fb42eaf319fb305",
+          measurementId: "G-QJ1JM61WK3"
         };
+        
+        // This ID should match the one used in your index.html to ensure data is read from the correct place
+        const appId = 'dgkmills-schedule-tracker';
 
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
             getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, getDoc,
-            query, orderBy, where, getDocs, writeBatch
+            query, orderBy, where, getDocs, writeBatch, deleteDoc
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // --- Collection References ---
+        // These paths are updated to match the data structure from your index.html
+        const studentsCol = collection(db, `artifacts/${appId}/public/data/students`);
+        const classesCol = collection(db, `artifacts/${appId}/public/data/classes`);
+
 
         // --- DOM Elements ---
         const studentListEl = document.getElementById('student-list');
@@ -158,7 +182,10 @@
             addStudent: document.getElementById('add-student-modal'),
             addClass: document.getElementById('add-class-modal'),
             attendance: document.getElementById('attendance-modal'),
+            confirmation: document.getElementById('confirmation-modal'),
         };
+        
+        let confirmationCallback = null;
 
         function openModal(modalName) {
             backdrop.classList.add('active');
@@ -168,12 +195,25 @@
         function closeModal() {
             backdrop.classList.remove('active');
             Object.values(modals).forEach(modal => modal.classList.remove('active'));
+            confirmationCallback = null; // Reset callback
+        }
+        
+        function openConfirmationModal(message, onConfirm) {
+            document.getElementById('confirmation-message').textContent = message;
+            confirmationCallback = onConfirm;
+            openModal('confirmation');
         }
 
         document.getElementById('add-student-btn').addEventListener('click', () => openModal('addStudent'));
         document.getElementById('add-class-btn').addEventListener('click', () => openModal('addClass'));
         backdrop.addEventListener('click', closeModal);
-        document.querySelectorAll('.modal-cancel-btn').forEach(btn => btn.addEventListener('click', closeModal));
+        document.querySelectorAll('.modal-cancel-btn, #confirm-cancel-btn').forEach(btn => btn.addEventListener('click', closeModal));
+        document.getElementById('confirm-action-btn').addEventListener('click', () => {
+            if (typeof confirmationCallback === 'function') {
+                confirmationCallback();
+            }
+            closeModal();
+        });
 
 
         // --- Firestore Data Rendering ---
@@ -186,7 +226,7 @@
                  studentListEl.innerHTML = `<p class="text-gray-500">No students added yet.</p>`;
                  return;
             }
-            students.forEach(student => {
+            students.sort((a,b) => a.name.localeCompare(b.name)).forEach(student => {
                 const classesLeft = student.bundleClassesRemaining || 0;
                 const bundleColor = classesLeft > 3 ? 'text-green-600' : (classesLeft > 0 ? 'text-yellow-600' : 'text-red-600');
                 
@@ -197,7 +237,10 @@
                         <p class="font-medium">${student.name}</p>
                         <p class="text-sm ${bundleColor}">Bundle Classes: ${classesLeft}</p>
                     </div>
-                    <button data-id="${student.id}" class="add-bundle-btn bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full hover:bg-blue-200">Add 10 Classes</button>
+                    <div class="flex items-center space-x-2">
+                        <button data-id="${student.id}" class="add-bundle-btn bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full hover:bg-blue-200">Add 10 Classes</button>
+                        <button data-id="${student.id}" data-name="${student.name}" class="delete-student-btn bg-red-100 text-red-800 text-xs font-medium px-3 py-1 rounded-full hover:bg-red-200">Delete</button>
+                    </div>
                 `;
                 studentListEl.appendChild(studentDiv);
             });
@@ -221,7 +264,10 @@
                             <p class="text-sm text-gray-600">Time: ${cls.time}</p>
                             <p class="text-sm text-gray-600">Attendees: ${cls.attendees ? cls.attendees.length : 0}</p>
                         </div>
-                        <button data-id="${cls.id}" data-date="${classDate}" data-time="${cls.time}" class="manage-attendance-btn bg-gray-600 text-white text-sm px-3 py-1 rounded-md hover:bg-gray-700">Manage Attendance</button>
+                        <div class="flex items-center space-x-2">
+                            <button data-id="${cls.id}" data-date="${classDate}" data-time="${cls.time}" class="manage-attendance-btn bg-gray-600 text-white text-sm px-3 py-1 rounded-md hover:bg-gray-700">Manage Attendance</button>
+                            <button data-id="${cls.id}" data-date="${classDate}" class="delete-class-btn bg-red-600 text-white text-sm px-3 py-1 rounded-md hover:bg-red-700">Delete</button>
+                        </div>
                     </div>
                 `;
                 classListEl.appendChild(classDiv);
@@ -232,14 +278,12 @@
         // --- Firestore Real-time Listeners ---
         function setupListeners() {
             // Students listener
-            const studentsQuery = query(collection(db, "students"), orderBy("name"));
-            onSnapshot(studentsQuery, (querySnapshot) => {
+            onSnapshot(studentsCol, (querySnapshot) => {
                 const students = [];
                 querySnapshot.forEach((doc) => {
                     students.push({ id: doc.id, ...doc.data() });
                 });
                 renderStudents(students);
-                // Hide loading indicator once we have data
                 loadingStateEl.style.display = 'none';
                 appContentEl.classList.remove('hidden');
             }, (error) => {
@@ -247,9 +291,8 @@
                 loadingStateEl.innerHTML = `<p class="text-red-500">Error connecting to the database. Make sure your Firebase config is correct and Firestore is enabled.</p>`;
             });
 
-            // Classes listener (shows classes from today onwards)
-            const todayStr = dayjs().format('YYYY-MM-DD');
-            const classesQuery = query(collection(db, "classes"), orderBy("date", "desc"));
+            // Classes listener
+            const classesQuery = query(classesCol, orderBy("date", "desc"));
             onSnapshot(classesQuery, (querySnapshot) => {
                 const classes = [];
                 querySnapshot.forEach((doc) => {
@@ -266,11 +309,12 @@
         document.getElementById('add-student-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const studentName = document.getElementById('student-name-input').value.trim();
+            const bundleSize = parseInt(document.getElementById('student-bundle-input').value, 10) || 0;
             if (studentName) {
                 try {
-                    await addDoc(collection(db, "students"), {
+                    await addDoc(studentsCol, {
                         name: studentName,
-                        bundleClassesRemaining: 0
+                        bundleClassesRemaining: bundleSize
                     });
                     document.getElementById('add-student-form').reset();
                     closeModal();
@@ -288,7 +332,7 @@
             const classTime = document.getElementById('class-time-input').value.trim();
             if (classDate && classTime) {
                  try {
-                    await addDoc(collection(db, "classes"), {
+                    await addDoc(classesCol, {
                         date: classDate,
                         time: classTime,
                         attendees: []
@@ -302,11 +346,12 @@
             }
         });
 
-        // Add bundle to student (event delegation)
+        // Handle Student button clicks (Add Bundle, Delete)
         studentListEl.addEventListener('click', async (e) => {
-            if (e.target && e.target.classList.contains('add-bundle-btn')) {
-                const studentId = e.target.dataset.id;
-                const studentRef = doc(db, "students", studentId);
+            const target = e.target;
+            if (target && target.closest('.add-bundle-btn')) {
+                const studentId = target.closest('.add-bundle-btn').dataset.id;
+                const studentRef = doc(db, studentsCol.path, studentId);
                 try {
                     const studentDoc = await getDoc(studentRef);
                     const currentBundles = studentDoc.data().bundleClassesRemaining || 0;
@@ -318,21 +363,34 @@
                     alert("Could not add bundle.");
                 }
             }
+            if (target && target.closest('.delete-student-btn')) {
+                 const button = target.closest('.delete-student-btn');
+                 const studentId = button.dataset.id;
+                 const studentName = button.dataset.name;
+                 openConfirmationModal(`This will permanently delete ${studentName}. This action cannot be undone.`, async () => {
+                     try {
+                        await deleteDoc(doc(db, studentsCol.path, studentId));
+                     } catch (error) {
+                         console.error("Error deleting student:", error);
+                         alert("Could not delete student.");
+                     }
+                 });
+            }
         });
-        
-        // --- Attendance Logic ---
-        const attendanceListEl = document.getElementById('attendance-student-list');
-        const attendanceModalHeader = document.getElementById('attendance-modal-header');
-        let currentClassId = null;
 
+        // Handle Class button clicks (Manage Attendance, Delete)
         classListEl.addEventListener('click', async (e) => {
-            if (e.target && e.target.classList.contains('manage-attendance-btn')) {
-                currentClassId = e.target.dataset.id;
-                const classDate = e.target.dataset.date;
-                const classTime = e.target.dataset.time;
-                attendanceModalHeader.textContent = `${classDate} at ${classTime}`;
+            const target = e.target;
 
-                const classRef = doc(db, "classes", currentClassId);
+            // Manage Attendance button
+            if (target && target.closest('.manage-attendance-btn')) {
+                const button = target.closest('.manage-attendance-btn');
+                currentClassId = button.dataset.id;
+                const classDate = button.dataset.date;
+                const classTime = button.dataset.time;
+                attendanceModalHeader.textContent = `${classDate} at ${classTime}`;
+                
+                const classRef = doc(db, classesCol.path, currentClassId);
                 const classDoc = await getDoc(classRef);
                 const currentAttendees = classDoc.data().attendees || [];
                 
@@ -344,9 +402,9 @@
                     const bundleInfo = hasBundle ? `(${student.bundleClassesRemaining} left)` : '(No Bundle)';
                     
                     const label = document.createElement('label');
-                    label.className = 'flex items-center p-2 border rounded-md';
+                    label.className = 'flex items-center p-2 border rounded-md hover:bg-gray-50';
                     label.innerHTML = `
-                        <input type="checkbox" data-student-id="${student.id}" data-has-bundle="${hasBundle}" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isChecked}>
+                        <input type="checkbox" data-student-id="${student.id}" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isChecked}>
                         <span class="ml-3 font-medium">${student.name}</span>
                         <span class="ml-2 text-sm text-gray-500">${bundleInfo}</span>
                     `;
@@ -355,7 +413,49 @@
 
                 openModal('attendance');
             }
+            
+            // Delete Class button
+            if (target && target.closest('.delete-class-btn')) {
+                const button = target.closest('.delete-class-btn');
+                const classId = button.dataset.id;
+                const classDate = button.dataset.date;
+                 openConfirmationModal(`This will delete the class on ${classDate} and refund a class credit to all attendees. This cannot be undone.`, async () => {
+                     const classRef = doc(db, classesCol.path, classId);
+                     try {
+                        const classDoc = await getDoc(classRef);
+                        if (!classDoc.exists()) return;
+
+                        const attendeeIds = classDoc.data().attendees || [];
+                        const batch = writeBatch(db);
+
+                        // Refund class credits
+                        if (attendeeIds.length > 0) {
+                            for (const studentId of attendeeIds) {
+                                const studentRef = doc(db, studentsCol.path, studentId);
+                                const student = allStudents.find(s => s.id === studentId);
+                                if (student) {
+                                    const newBundleCount = (student.bundleClassesRemaining || 0) + 1;
+                                    batch.update(studentRef, { bundleClassesRemaining: newBundleCount });
+                                }
+                            }
+                        }
+                        
+                        // Delete the class
+                        batch.delete(classRef);
+                        await batch.commit();
+
+                     } catch (error) {
+                         console.error("Error deleting class:", error);
+                         alert("Could not delete class.");
+                     }
+                 });
+            }
         });
+        
+        // --- Attendance Logic ---
+        const attendanceListEl = document.getElementById('attendance-student-list');
+        const attendanceModalHeader = document.getElementById('attendance-modal-header');
+        let currentClassId = null;
 
         document.getElementById('save-attendance-btn').addEventListener('click', async () => {
             if (!currentClassId) return;
@@ -364,33 +464,26 @@
             const newAttendeeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.studentId);
             
             try {
-                // Get the class's previous state to calculate changes
-                const classRef = doc(db, "classes", currentClassId);
+                const classRef = doc(db, classesCol.path, currentClassId);
                 const classDoc = await getDoc(classRef);
                 const previousAttendeeIds = classDoc.data().attendees || [];
-
-                // Use a batch write to update all documents atomically
                 const batch = writeBatch(db);
 
-                // 1. Update the class document with the new list of attendees
                 batch.update(classRef, { attendees: newAttendeeIds });
 
-                // 2. Adjust bundle counts for each student
                 allStudents.forEach(student => {
                     const wasAttending = previousAttendeeIds.includes(student.id);
                     const isNowAttending = newAttendeeIds.includes(student.id);
-                    const studentRef = doc(db, "students", student.id);
+                    
+                    if (wasAttending === isNowAttending) return; // No change for this student
+
+                    const studentRef = doc(db, studentsCol.path, student.id);
                     const classesRemaining = student.bundleClassesRemaining || 0;
 
-                    // If they just got added to the class and have a bundle, decrement their count
                     if (!wasAttending && isNowAttending && classesRemaining > 0) {
                         batch.update(studentRef, { bundleClassesRemaining: classesRemaining - 1 });
                     }
-                    // If they just got removed from the class and had a bundle used, increment their count
                     else if (wasAttending && !isNowAttending) {
-                        // To be fair, we check if they *had* a bundle when they were previously marked.
-                        // For simplicity in this version, we will refund a class.
-                        // A more complex system would log which class used which bundle credit.
                          batch.update(studentRef, { bundleClassesRemaining: classesRemaining + 1 });
                     }
                 });
@@ -404,6 +497,30 @@
             }
         });
 
+        // --- Export to CSV Logic ---
+        document.getElementById('export-csv-btn').addEventListener('click', () => {
+            if (allStudents.length === 0) {
+                alert("No student data to export.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Student Name,Remaining Bundle Classes\r\n"; // CSV Header
+
+            allStudents.forEach(student => {
+                const row = `"${student.name}",${student.bundleClassesRemaining || 0}`;
+                csvContent += row + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            const formattedDate = dayjs().format('YYYY-MM-DD');
+            link.setAttribute("download", `student_export_${formattedDate}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
 
         // --- Initial Load ---
         setupListeners();
@@ -411,4 +528,3 @@
     </script>
 </body>
 </html>
-
