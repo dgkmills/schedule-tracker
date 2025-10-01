@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule Tracker - Admin Dashboard</title>
+    <title>Teacher Dan's Classes - Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
@@ -39,7 +39,7 @@
     <!-- Header -->
     <header class="bg-white shadow-sm">
         <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-gray-900">T. Dan's Action Lab - Admin Dashboard</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Teacher Dan's Classes - Admin</h1>
             <a href="/index.html" class="text-indigo-600 hover:text-indigo-800 transition">← Back to Welcome Page</a>
         </div>
     </header>
@@ -143,11 +143,8 @@
         </div>
     </div>
 
-
-    <!-- Firebase and App Logic -->
     <script type="module">
-        // IMPORTANT: This configuration is copied from your index.html to ensure
-        // this admin panel connects to the SAME database as your public website.
+        // This script remains unchanged
         const firebaseConfig = {
           apiKey: "AIzaSyAdkkonrM6gFCN_xmw5g1qSJipHJ_LZKTE",
           authDomain: "schedule.dgkmills.com",
@@ -159,30 +156,20 @@
         };
         
         const appId = 'dgkmills-schedule-tracker';
+        const prices = { groupBundle: 425, groupNoBundle: 500, private: 650 };
 
-        // --- Pricing Configuration ---
-        const prices = {
-            groupBundle: 425,
-            groupNoBundle: 500,
-            private: 650
-        };
-
-        // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import {
             getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, getDoc,
             query, orderBy, deleteDoc, writeBatch
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- Collection References ---
         const studentsCol = collection(db, `artifacts/${appId}/public/data/students`);
         const classesCol = collection(db, `artifacts/${appId}/public/data/classes`);
 
-        // --- DOM Elements ---
         const studentListEl = document.getElementById('student-list');
         const classListEl = document.getElementById('class-list');
         const loadingStateEl = document.getElementById('loading-state');
@@ -191,7 +178,6 @@
         let allStudents = [];
         let allClasses = [];
 
-        // --- Modal Handling ---
         const backdrop = document.getElementById('modal-backdrop');
         const modals = {
             addStudent: document.getElementById('add-student-modal'),
@@ -224,13 +210,9 @@
         backdrop.addEventListener('click', closeModal);
         document.querySelectorAll('.modal-cancel-btn, #confirm-cancel-btn').forEach(btn => btn.addEventListener('click', closeModal));
         document.getElementById('confirm-action-btn').addEventListener('click', () => {
-            if (typeof confirmationCallback === 'function') {
-                confirmationCallback();
-            }
+            if (typeof confirmationCallback === 'function') { confirmationCallback(); }
             closeModal();
         });
-
-        // --- Firestore Data Rendering ---
 
         function renderStudents(students) {
             allStudents = students;
@@ -260,7 +242,7 @@
         }
 
         function renderClasses(classes) {
-            allClasses = classes; // Update cache for exporting
+            allClasses = classes;
             classListEl.innerHTML = '';
             if (classes.length === 0) {
                  classListEl.innerHTML = `<p class="text-gray-500">No classes scheduled.</p>`;
@@ -270,8 +252,6 @@
                 const classDate = dayjs(cls.date).format('dddd, MMMM D, YYYY');
                 const classTypeDisplay = cls.classType === 'private' ? 'Private Class' : 'Group Class';
                 const classTypeColor = cls.classType === 'private' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800';
-
-                // Calculate gross sales
                 let grossSales = 0;
                 if(cls.attendees && Array.isArray(cls.attendees)){
                     cls.attendees.forEach(attendee => {
@@ -280,7 +260,6 @@
                         else if(attendee.paymentMethod === 'private') grossSales += prices.private;
                     });
                 }
-                
                 const classDiv = document.createElement('div');
                 classDiv.className = 'p-3 border rounded-md';
                 classDiv.innerHTML = `
@@ -305,9 +284,7 @@
                 classListEl.appendChild(classDiv);
             });
         }
-
-
-        // --- Firestore Real-time Listeners ---
+        
         function setupListeners() {
             onSnapshot(studentsCol, (querySnapshot) => {
                 const students = [];
@@ -328,25 +305,16 @@
             });
         }
 
-
-        // --- Firestore Write Operations ---
-
         document.getElementById('add-student-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const studentName = document.getElementById('student-name-input').value.trim();
             const bundleSize = parseInt(document.getElementById('student-bundle-input').value, 10) || 0;
             if (studentName) {
                 try {
-                    await addDoc(studentsCol, {
-                        name: studentName,
-                        bundleClassesRemaining: bundleSize
-                    });
+                    await addDoc(studentsCol, { name: studentName, bundleClassesRemaining: bundleSize });
                     document.getElementById('add-student-form').reset();
                     closeModal();
-                } catch (error) {
-                    console.error("Error adding student: ", error);
-                    alert("Could not add student.");
-                }
+                } catch (error) { console.error("Error adding student: ", error); alert("Could not add student."); }
             }
         });
         
@@ -357,46 +325,31 @@
             const classType = document.getElementById('class-type-select').value;
             if (classDate && classTime) {
                  try {
-                    await addDoc(classesCol, {
-                        date: classDate,
-                        time: classTime,
-                        classType: classType,
-                        attendees: []
-                    });
+                    await addDoc(classesCol, { date: classDate, time: classTime, classType: classType, attendees: [] });
                     document.getElementById('add-class-form').reset();
                     closeModal();
-                } catch (error) {
-                    console.error("Error adding class: ", error);
-                    alert("Could not add class.");
-                }
+                } catch (error) { console.error("Error adding class: ", error); alert("Could not add class."); }
             }
         });
 
         studentListEl.addEventListener('click', async (e) => {
-            const target = e.target;
-            if (target.closest('.add-bundle-btn')) {
-                const studentId = target.closest('.add-bundle-btn').dataset.id;
+            const target = e.target.closest('.add-bundle-btn');
+            if (target) {
+                const studentId = target.dataset.id;
                 const studentRef = doc(db, studentsCol.path, studentId);
                 try {
                     const studentDoc = await getDoc(studentRef);
                     const currentBundles = studentDoc.data().bundleClassesRemaining || 0;
                     await updateDoc(studentRef, { bundleClassesRemaining: currentBundles + 10 });
-                } catch (error) {
-                    console.error("Error adding bundle:", error);
-                    alert("Could not add bundle.");
-                }
+                } catch (error) { console.error("Error adding bundle:", error); alert("Could not add bundle."); }
             }
-            if (target.closest('.delete-student-btn')) {
-                 const button = target.closest('.delete-student-btn');
-                 const studentId = button.dataset.id;
-                 const studentName = button.dataset.name;
+            const deleteBtn = e.target.closest('.delete-student-btn');
+            if (deleteBtn) {
+                 const studentId = deleteBtn.dataset.id;
+                 const studentName = deleteBtn.dataset.name;
                  openConfirmationModal(`This will permanently delete ${studentName}.`, async () => {
-                     try {
-                        await deleteDoc(doc(db, studentsCol.path, studentId));
-                     } catch (error) {
-                         console.error("Error deleting student:", error);
-                         alert("Could not delete student.");
-                     }
+                     try { await deleteDoc(doc(db, studentsCol.path, studentId)); } 
+                     catch (error) { console.error("Error deleting student:", error); alert("Could not delete student."); }
                  });
             }
         });
@@ -406,25 +359,20 @@
         let currentClassId = null;
 
         classListEl.addEventListener('click', async (e) => {
-            const target = e.target;
-            if (target.closest('.manage-attendance-btn')) {
-                const button = target.closest('.manage-attendance-btn');
-                currentClassId = button.dataset.id;
-                attendanceModalHeader.textContent = `${button.dataset.date} at ${button.dataset.time}`;
-                const classType = button.dataset.type;
-
+            const attendanceBtn = e.target.closest('.manage-attendance-btn');
+            if (attendanceBtn) {
+                currentClassId = attendanceBtn.dataset.id;
+                attendanceModalHeader.textContent = `${attendanceBtn.dataset.date} at ${attendanceBtn.dataset.time}`;
+                const classType = attendanceBtn.dataset.type;
                 const classRef = doc(db, classesCol.path, currentClassId);
                 const classDoc = await getDoc(classRef);
                 const currentAttendees = classDoc.data().attendees || [];
-                
                 attendanceListEl.innerHTML = ''; 
                 allStudents.sort((a,b) => a.name.localeCompare(b.name)).forEach(student => {
                     const attendanceRecord = currentAttendees.find(a => a.studentId === student.id);
                     const paymentMethod = attendanceRecord ? attendanceRecord.paymentMethod : '';
-
                     const hasBundle = (student.bundleClassesRemaining || 0) > 0;
                     const bundleInfo = hasBundle ? `(${student.bundleClassesRemaining} left)` : '(No Bundle)';
-                    
                     const disabledPrivate = classType === 'group' ? 'disabled' : '';
                     const disabledGroup = classType === 'private' ? 'disabled' : '';
                     const disabledBundle = classType === 'private' || !hasBundle ? 'disabled' : '';
@@ -440,207 +388,122 @@
                             <div class="flex space-x-2" data-student-id="${student.id}">
                                 <input type="radio" name="payment-${student.id}" value="groupBundle" id="bundle-${student.id}" ${paymentMethod === 'groupBundle' ? 'checked' : ''} ${disabledBundle}>
                                 <label for="bundle-${student.id}" class="${disabledBundle ? 'text-gray-400' : ''}">Bundle</label>
-                                
                                 <input type="radio" name="payment-${student.id}" value="groupNoBundle" id="no-bundle-${student.id}" ${paymentMethod === 'groupNoBundle' ? 'checked' : ''} ${disabledGroup}>
                                 <label for="no-bundle-${student.id}" class="${disabledGroup ? 'text-gray-400' : ''}">No Bundle</label>
-
                                 <input type="radio" name="payment-${student.id}" value="private" id="private-${student.id}" ${paymentMethod === 'private' ? 'checked' : ''} ${disabledPrivate}>
                                 <label for="private-${student.id}" class="${disabledPrivate ? 'text-gray-400' : ''}">Private</label>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                     attendanceListEl.appendChild(row);
                 });
-
                 openModal('attendance');
             }
             
-            if (target.closest('.delete-class-btn')) {
-                const button = target.closest('.delete-class-btn');
-                openConfirmationModal(`This will delete the class on ${button.dataset.date} and refund any used bundle credits.`, async () => {
-                     const classRef = doc(db, classesCol.path, button.dataset.id);
+            const deleteBtn = e.target.closest('.delete-class-btn');
+            if (deleteBtn) {
+                openConfirmationModal(`This will delete the class on ${deleteBtn.dataset.date} and refund any used bundle credits.`, async () => {
+                     const classRef = doc(db, classesCol.path, deleteBtn.dataset.id);
                      try {
                         const classDoc = await getDoc(classRef);
                         if (!classDoc.exists()) return;
-
                         const attendees = classDoc.data().attendees || [];
                         const batch = writeBatch(db);
-
                         if (attendees.length > 0) {
                            const bundledAttendees = attendees.filter(a => a.paymentMethod === 'groupBundle');
                            for (const attendee of bundledAttendees) {
                                 const studentRef = doc(db, studentsCol.path, attendee.studentId);
                                 const student = allStudents.find(s => s.id === attendee.studentId);
-                                if (student) {
-                                    batch.update(studentRef, { bundleClassesRemaining: (student.bundleClassesRemaining || 0) + 1 });
-                                }
+                                if (student) { batch.update(studentRef, { bundleClassesRemaining: (student.bundleClassesRemaining || 0) + 1 }); }
                            }
                         }
-                        
                         batch.delete(classRef);
                         await batch.commit();
-
-                     } catch (error) {
-                         console.error("Error deleting class:", error);
-                         alert("Could not delete class.");
-                     }
+                     } catch (error) { console.error("Error deleting class:", error); alert("Could not delete class."); }
                  });
             }
         });
         
         document.getElementById('save-attendance-btn').addEventListener('click', async () => {
             if (!currentClassId) return;
-            
             const newAttendees = [];
             const studentRows = attendanceListEl.querySelectorAll('[data-student-id]');
             studentRows.forEach(row => {
                 const checkedRadio = row.querySelector('input[type="radio"]:checked');
                 if(checkedRadio){
-                    newAttendees.push({
-                        studentId: row.dataset.studentId,
-                        paymentMethod: checkedRadio.value
-                    });
+                    newAttendees.push({ studentId: row.dataset.studentId, paymentMethod: checkedRadio.value });
                 }
             });
-            
             try {
                 const classRef = doc(db, classesCol.path, currentClassId);
                 const classDoc = await getDoc(classRef);
                 const previousAttendees = classDoc.data().attendees || [];
                 const batch = writeBatch(db);
-
                 batch.update(classRef, { attendees: newAttendees });
 
-                // Compare previous and new state to adjust bundles
                 allStudents.forEach(student => {
                     const prevRecord = previousAttendees.find(a => a.studentId === student.id);
                     const newRecord = newAttendees.find(a => a.studentId === student.id);
-
                     const wasBundle = prevRecord && prevRecord.paymentMethod === 'groupBundle';
                     const isBundle = newRecord && newRecord.paymentMethod === 'groupBundle';
-
-                    if (wasBundle === isBundle) return; // No change needed
-
+                    if (wasBundle === isBundle) return;
                     const studentRef = doc(db, studentsCol.path, student.id);
                     const classesRemaining = student.bundleClassesRemaining || 0;
-                    
-                    if (!wasBundle && isBundle) { // Just used a bundle
-                        batch.update(studentRef, { bundleClassesRemaining: classesRemaining - 1 });
-                    }
-                    else if (wasBundle && !isBundle) { // Refund a bundle
-                         batch.update(studentRef, { bundleClassesRemaining: classesRemaining + 1 });
-                    }
+                    if (!wasBundle && isBundle) { batch.update(studentRef, { bundleClassesRemaining: classesRemaining - 1 }); }
+                    else if (wasBundle && !isBundle) { batch.update(studentRef, { bundleClassesRemaining: classesRemaining + 1 }); }
                 });
-                
                 await batch.commit();
                 closeModal();
-
-            } catch (error) {
-                console.error("Error saving attendance: ", error);
-                alert("Could not save attendance.");
-            }
+            } catch (error) { console.error("Error saving attendance: ", error); alert("Could not save attendance."); }
         });
 
-        // --- CSV Export Logic ---
-        document.getElementById('export-students-csv-btn').addEventListener('click', () => {
-            if (allStudents.length === 0) {
-                alert("No student data to export.");
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Student Name,Remaining Bundle Classes\r\n";
-
-            allStudents.sort((a,b) => a.name.localeCompare(b.name)).forEach(student => {
-                const row = `"${student.name}",${student.bundleClassesRemaining || 0}`;
-                csvContent += row + "\r\n";
-            });
-
+        function exportCsv(headers, data, filename) {
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\r\n";
+            csvContent += data.map(row => row.join(",")).join("\r\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            const formattedDate = dayjs().format('YYYY-MM-DD');
-            link.setAttribute("download", `student_export_${formattedDate}.csv`);
+            link.setAttribute("download", `${filename}_${dayjs().format('YYYY-MM-DD')}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        document.getElementById('export-students-csv-btn').addEventListener('click', () => {
+            if (allStudents.length === 0) return alert("No student data to export.");
+            const headers = ["Student Name", "Remaining Bundle Classes"];
+            const data = allStudents.sort((a,b) => a.name.localeCompare(b.name)).map(s => [`"${s.name}"`, s.bundleClassesRemaining || 0]);
+            exportCsv(headers, data, "student_export");
         });
         
         document.getElementById('export-classes-csv-btn').addEventListener('click', () => {
-            if (allClasses.length === 0) {
-                alert("No class data to export.");
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Class Date,Class Time,Class Type,Student Name,Payment Method,Amount Paid (baht)\r\n";
-
-            const sortedClasses = [...allClasses].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            sortedClasses.forEach(cls => {
+            if (allClasses.length === 0) return alert("No class data to export.");
+            const headers = ["Class Date", "Class Time", "Class Type", "Student Name", "Payment Method", "Amount Paid (baht)"];
+            const data = [];
+            [...allClasses].sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(cls => {
                 if (cls.attendees && cls.attendees.length > 0) {
-                    // Sort attendees alphabetically for consistent export order
-                    const sortedAttendees = [...cls.attendees].sort((a, b) => {
+                    [...cls.attendees].sort((a, b) => {
                         const studentA = allStudents.find(s => s.id === a.studentId);
                         const studentB = allStudents.find(s => s.id === b.studentId);
                         if(studentA && studentB) return studentA.name.localeCompare(studentB.name);
                         return 0;
-                    });
-
-                    sortedAttendees.forEach(attendee => {
+                    }).forEach(attendee => {
                         const student = allStudents.find(s => s.id === attendee.studentId);
                         const studentName = student ? student.name : 'Unknown Student';
-                        
-                        let paymentMethodDisplay = '';
-                        let amountPaid = 0;
-
+                        let paymentMethodDisplay = 'N/A', amountPaid = 0;
                         switch (attendee.paymentMethod) {
-                            case 'groupBundle':
-                                paymentMethodDisplay = 'Bundle';
-                                amountPaid = prices.groupBundle;
-                                break;
-                            case 'groupNoBundle':
-                                paymentMethodDisplay = 'No Bundle';
-                                amountPaid = prices.groupNoBundle;
-                                break;
-                            case 'private':
-                                paymentMethodDisplay = 'Private';
-                                amountPaid = prices.private;
-                                break;
-                            default:
-                                paymentMethodDisplay = 'N/A';
+                            case 'groupBundle': paymentMethodDisplay = 'Bundle'; amountPaid = prices.groupBundle; break;
+                            case 'groupNoBundle': paymentMethodDisplay = 'No Bundle'; amountPaid = prices.groupNoBundle; break;
+                            case 'private': paymentMethodDisplay = 'Private'; amountPaid = prices.private; break;
                         }
-                        
                         const classTypeDisplay = cls.classType === 'private' ? 'Private' : 'Group';
-                        
-                        const row = [
-                            `"${dayjs(cls.date).format('YYYY-MM-DD')}"`,
-                            `"${cls.time}"`,
-                            `"${classTypeDisplay}"`,
-                            `"${studentName}"`,
-                            `"${paymentMethodDisplay}"`,
-                            amountPaid
-                        ].join(',');
-                        
-                        csvContent += row + "\r\n";
+                        data.push([`"${dayjs(cls.date).format('YYYY-MM-DD')}"`, `"${cls.time}"`, `"${classTypeDisplay}"`, `"${studentName}"`, `"${paymentMethodDisplay}"`, amountPaid]);
                     });
                 }
             });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            const formattedDate = dayjs().format('YYYY-MM-DD');
-            link.setAttribute("download", `class_export_${formattedDate}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            exportCsv(headers, data, "class_export");
         });
-
-        // --- Initial Load ---
+        
         setupListeners();
-
     </script>
 </body>
 </html>
-

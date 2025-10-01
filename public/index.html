@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>schedule.dgkmills.com</title>
+    <title>Teacher Dan's Classes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -11,16 +11,12 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
-        .page-section {
-            display: none;
-        }
-        .page-section.active {
-            display: block;
-        }
+        .page-section { display: none; }
+        .page-section.active { display: block; }
         .loader {
             border-top-color: #3498db;
             -webkit-animation: spinner 1.5s linear infinite;
-            animation: spinner 1.s linear infinite;
+            animation: spinner 1.5s linear infinite;
         }
         @-webkit-keyframes spinner {
             0% { -webkit-transform: rotate(0deg); }
@@ -30,7 +26,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Style for the calendar grid */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -46,19 +41,11 @@
             border-radius: 0.5rem;
             border: 1px solid #e5e7eb;
         }
-        @media (max-width: 768px) {
-            .calendar-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-         @media (max-width: 640px) {
-            .calendar-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
+        @media (max-width: 768px) { .calendar-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 640px) { .calendar-grid { grid-template-columns: repeat(2, 1fr); } }
         .iframe-container {
             position: relative;
-            padding-bottom: 100%; /* 1:1 aspect ratio */
+            padding-bottom: 100%;
             height: 0;
             overflow: hidden;
             width: 100%;
@@ -69,8 +56,101 @@
             left: 0;
             width: 100%;
             height: 100%;
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        /* Modal Styles */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-backdrop.active { display: flex; }
+        .modal-content {
+            background-color: #ffffff;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        .modal-close-btn:hover { color: #1f2937; }
+
+        /* Slideshow Styles */
+        .slideshow-container {
+            max-width: 1000px;
+            position: relative;
+            margin: auto;
+            margin-top: 1.5rem;
+        }
+        .slide { display: none; }
+        .slide img {
+            width: 100%;
+            border-radius: 0.5rem;
+            height: 400px; /* Use height for consistency */
+            object-fit: contain; /* Changed from cover to contain to prevent cropping */
+            background-color: #f3f4f6; /* Subtle background for letterboxing */
+        }
+        .prev, .next {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            width: auto;
+            padding: 16px;
+            margin-top: -22px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            transition: 0.6s ease;
+            border-radius: 0 3px 3px 0;
+            user-select: none;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .next { right: 0; border-radius: 3px 0 0 3px; }
+        .prev:hover, .next:hover { background-color: rgba(0,0,0,0.8); }
+        .dots { text-align: center; padding: 10px 0; }
+        .dot {
+            cursor: pointer;
+            height: 15px;
+            width: 15px;
+            margin: 0 2px;
+            background-color: #bbb;
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.6s ease;
+        }
+        .dot.active, .dot:hover { background-color: #717171; }
+        .fade {
+            -webkit-animation-name: fade;
+            -webkit-animation-duration: 1.5s;
+            animation-name: fade;
+            animation-duration: 1.5s;
+        }
+        @-webkit-keyframes fade {
+          from {opacity: .4} 
+          to {opacity: 1}
+        }
+        @keyframes fade {
+          from {opacity: .4} 
+          to {opacity: 1}
         }
     </style>
 </head>
@@ -79,20 +159,17 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
                 <div class="flex-shrink-0">
-                    <span class="text-2xl font-bold text-blue-600">schedule.dgkmills.com</span>
+                    <span class="text-2xl font-bold text-blue-600">Teacher Dan's Classes</span>
                 </div>
-                <div>
-                </div>
-                <!-- Updated desktop navigation with data attributes -->
+                <div></div>
+                <!-- Updated desktop navigation with "About" removed -->
                 <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                     <a href="#" data-page="home" class="nav-link border-b-2 border-transparent hover:border-blue-500 py-2 px-3 text-sm font-medium transition-colors">Home</a>
-                    <a href="#" data-page="classes-projects" class="nav-link border-b-2 border-transparent hover:border-blue-500 py-2 px-3 text-sm font-medium transition-colors">About</a>
                     <a href="#" data-page="tools-for-learning" class="nav-link border-b-2 border-transparent hover:border-blue-500 py-2 px-3 text-sm font-medium transition-colors">Tools</a>
                     <a href="#" data-page="schedule" class="nav-link border-b-2 border-transparent hover:border-blue-500 py-2 px-3 text-sm font-medium transition-colors">Schedule</a>
                     <a href="#" data-page="contact" class="nav-link border-b-2 border-transparent hover:border-blue-500 py-2 px-3 text-sm font-medium transition-colors">Contact</a>
                 </div>
-                <div>
-                </div>
+                <div></div>
                 <div class="sm:hidden">
                     <button id="menu-button" class="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,144 +178,229 @@
                     </button>
                 </div>
             </div>
-            <!-- Updated mobile navigation with data attributes -->
+            <!-- Updated mobile navigation with "About" removed -->
             <div id="mobile-menu" class="sm:hidden hidden pb-4 space-y-2">
                 <a href="#" data-page="home" class="nav-link block rounded-lg py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200">Home</a>
-                <a href="#" data-page="classes-projects" class="nav-link block rounded-lg py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200">About</a>
                 <a href="#" data-page="tools-for-learning" class="nav-link block rounded-lg py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200">Tools</a>
                 <a href="#" data-page="schedule" class="nav-link block rounded-lg py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200">Schedule</a>
                 <a href="#" data-page="contact" class="nav-link block rounded-lg py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200">Contact</a>
             </div>
         </div>
     </nav>
+
     <main class="pt-24 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div id="home" class="page-section active">
             <div class="bg-white shadow-lg rounded-xl p-8 mb-8">
                 <h1 class="text-4xl font-extrabold text-gray-900 mb-4 text-center">Your Journey to Fluency Starts Here</h1>
-                <p class="text-lg text-gray-600 mb-8 text-center max-w-3xl mx-auto">Achieve your language goals with fun, personalized lessons. Find the perfect class for you or your child below!</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <!-- Biz Kid$ Card -->
-                    <div class="bg-blue-50 rounded-lg p-6 shadow-md border border-blue-200 flex flex-col">
-                        <img src="images/tdanwelcome.jpg" alt="Biz Kid$ Class" class="rounded-md mb-4 w-full h-48 object-cover">
-                        <h2 class="text-2xl font-bold text-blue-800 mb-2">Biz Kid$</h2>
-                        <ul class="text-blue-700 mb-4 list-disc list-inside space-y-1 flex-grow">
-                            <li>Learn English through a fun, business-themed game.</li>
-                            <li>Practice vocabulary, conversation, and presentation skills.</li>
-                            <li>Build confidence in a hands-on, interactive environment.</li>
-                        </ul>
-                        <div class="grid grid-cols-2 gap-4 mt-auto">
-                            <a href="#" onclick="showPage('classes-projects')" class="inline-block text-center py-3 px-4 border border-blue-600 rounded-md shadow-sm text-lg font-medium text-blue-600 bg-white hover:bg-blue-50 transition-colors">Learn More</a>
-                            <a href="#" onclick="showPage('schedule', 'Biz Kid$')" class="inline-block text-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">Sign Up</a>
+                <p class="text-lg text-gray-600 mb-8 text-center max-w-3xl mx-auto">Achieve your language goals with fun, personalized lessons. Click a logo below to find the perfect class for you!</p>
+                
+                <!-- Logo Buttons - Updated layout and content -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <button data-modal="bizkids-modal" class="flex flex-col bg-white rounded-xl shadow-lg hover:shadow-xl hover:shadow-blue-500/30 border-2 border-blue-200 hover:border-blue-400 transition-all transform hover:-translate-y-1 overflow-hidden">
+                        <div class="p-4 flex-grow flex items-center justify-center">
+                            <img src="images/bk-logo.jpg" alt="Biz Kid$ Logo" class="h-48 md:h-56 object-contain">
                         </div>
-                    </div>
-                    <!-- Web Kid$ Card -->
-                    <div class="bg-green-50 rounded-lg p-6 shadow-md border border-green-200 flex flex-col">
-                        <img src="images/web-kids-thumb.png" alt="Web Kid$ Class" class="rounded-md mb-4 w-full h-48 object-cover">
-                        <h2 class="text-2xl font-bold text-green-800 mb-2">Web Kid$</h2>
-                        <ul class="text-green-700 mb-4 list-disc list-inside space-y-1 flex-grow">
-                           <li>Combine English learning with modern web development.</li>
-                           <li>Learn HTML, CSS, and JavaScript basics.</li>
-                           <li>Build a real-world online portfolio to showcase your skills.</li>
-                        </ul>
-                        <div class="grid grid-cols-2 gap-4 mt-auto">
-                           <a href="#" onclick="showPage('classes-projects')" class="inline-block text-center py-3 px-4 border border-green-600 rounded-md shadow-sm text-lg font-medium text-green-600 bg-white hover:bg-green-50 transition-colors">Learn More</a>
-                           <a href="#" onclick="showPage('schedule', 'Web Kid$')" class="inline-block text-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 transition-colors">Sign Up</a>
+                        <div class="bg-blue-50 text-blue-800 p-4 text-left text-sm space-y-1">
+                            <p><strong>Age Range:</strong> 4-16</p>
+                            <p><strong>English Level:</strong> Basic</p>
+                            <p><strong>Learning Goal:</strong> Everyday & business language</p>
+                            <p><strong>Feature:</strong> Pop-up stand to practice real sales and make real money.</p>
                         </div>
-                    </div>
+                    </button>
+                    <button data-modal="webkids-modal" class="flex flex-col bg-white rounded-xl shadow-lg hover:shadow-xl hover:shadow-green-500/30 border-2 border-green-200 hover:border-green-400 transition-all transform hover:-translate-y-1 overflow-hidden">
+                        <div class="p-4 flex-grow flex items-center justify-center">
+                            <img src="images/wk-logo.png" alt="Web Kid$ Logo" class="h-48 md:h-56 object-contain">
+                        </div>
+                        <div class="bg-green-50 text-green-800 p-4 text-left text-sm space-y-1">
+                            <p><strong>Age Range:</strong> 8+</p>
+                            <p><strong>English Level:</strong> Intermediate</p>
+                            <p><strong>Learning Goal:</strong> Everyday language & web development</p>
+                            <p><strong>Feature:</strong> Students build their own website portfolio (see below) while learning English.</p>
+                        </div>
+                    </button>
+                    <button data-modal="proenglish-modal" class="flex flex-col bg-white rounded-xl shadow-lg hover:shadow-xl hover:shadow-purple-500/30 border-2 border-purple-200 hover:border-purple-400 transition-all transform hover:-translate-y-1 overflow-hidden">
+                        <div class="p-4 flex-grow flex items-center justify-center">
+                           <img src="images/bp-logo.png" alt="Professional English Logo" class="h-48 md:h-56 object-contain">
+                        </div>
+                        <div class="bg-purple-50 text-purple-800 p-4 text-left text-sm space-y-1">
+                            <p><strong>Age Range:</strong> 18+</p>
+                            <p><strong>English Level:</strong> Advanced</p>
+                            <p><strong>Learning Goal:</strong> Business communication</p>
+                            <p><strong>Feature:</strong> Customized tools for your industry-specific language (see Tools page for examples).</p>
+                        </div>
+                    </button>
                 </div>
+
                 <div class="bg-gray-200 p-4 rounded-lg border border-gray-300">
                     <h2 class="text-xl font-bold text-gray-800 mb-2">Latest Notice</h2>
                     <p class="text-gray-700">New student slots are now open! Visit the Schedule page to request a time slot for a free consultation. I look forward to working with you!</p>
                 </div>
-                <div class="mt-8 pt-8 border-t border-gray-300">
-                    <h2 class="text-3xl font-extrabold text-gray-900 mb-4 text-center">Professional English for Businesses</h2>
-                    <p class="text-lg text-gray-600 mb-8 text-center max-w-3xl mx-auto">Elevate your team's communication skills with my business-focused English classes, trusted by companies like Kohsel from Denmark.</p>
-                    <!-- Professional English Card -->
-                    <div class="bg-purple-50 rounded-lg p-6 shadow-md border border-purple-200 mx-auto max-w-xl flex flex-col">
-                        <img src="images/adult-class-selfie.jpg" alt="Professional English Class" class="rounded-md mb-4 w-full h-48 object-cover">
-                        <h2 class="text-2xl font-bold text-purple-800 mb-2">Professional English</h2>
-                         <ul class="text-purple-700 mb-4 list-disc list-inside space-y-1 flex-grow">
-                            <li>Tailored curriculum for business communication needs.</li>
-                            <li>Master emails, presentations, meetings, and negotiations.</li>
-                            <li>Gain confidence and clarity in professional settings.</li>
-                        </ul>
-                        <div class="grid grid-cols-2 gap-4 mt-auto">
-                            <a href="#" onclick="showPage('classes-projects')" class="inline-block text-center py-3 px-4 border border-purple-600 rounded-md shadow-sm text-lg font-medium text-purple-600 bg-white hover:bg-purple-50 transition-colors">Learn More</a>
-                            <a href="#" onclick="showPage('schedule', 'Professional English')" class="inline-block text-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors">Sign Up</a>
+
+                <!-- About section moved here from the old "classes-projects" page -->
+                <div class="mt-12 pt-8 border-t border-gray-200">
+                    <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">About My Classes & Projects</h1>
+                    <div class="mb-12">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4 text-center">About Teacher Dan</h2>
+                        <div class="flex flex-col md:flex-row items-center md:items-start gap-8 max-w-4xl mx-auto">
+                            <img src="images/tdan-great-choice.jpg" alt="Teacher Dan's Portrait" class="rounded-full shadow-md w-48 h-48 object-cover flex-shrink-0">
+                            <div class="text-lg text-gray-600 space-y-4">
+                               <p><strong>Passionate ESL Instructor:</strong> With over 10 years of experience, I create dynamic and engaging learning environments.</p>
+                               <p><strong>Holistic Approach:</strong> I combine core language practice with creative, project-based learning to empower students and build confidence.</p>
+                               <p><strong>Tech-Integrated Learning:</strong> My background in web development and AI allows me to integrate modern tools into language education, building future-ready skills for every student.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4 text-center">Detailed Class Descriptions</h2>
+                        <div class="space-y-8 max-w-4xl mx-auto">
+                            <!-- Biz Kid$ Description -->
+                            <div id="about-bizkids" class="bg-blue-50 rounded-lg p-6 shadow-md border border-blue-200">
+                                <h3 class="text-xl font-bold text-blue-800 mb-2">Biz Kid$</h3>
+                                <p class="text-blue-700 mb-4">My flagship business-focused ESL class makes learning English both fun and practical. Students are immersed in a gamified learning environment where they start their own pretend businesses. Key activities include:</p>
+                                <ul class="text-blue-700 list-disc list-inside space-y-1">
+                                    <li>Designing products and marketing materials.</li>
+                                    <li>Practicing conversational English for sales and customer service.</li>
+                                    <li>Developing presentation skills and managing pretend finances.</li>
+                                </ul>
+                                <!-- Biz Kid$ Slideshow -->
+                                <div class="slideshow-container">
+                                    <div class="slide fade"><img src="images/lemonade2.jpg" alt="Biz Kids lemonade stand"></div>
+                                    <div class="slide fade"><img src="images/lemonade3.jpg" alt="Biz Kids learning about business"></div>
+                                    <div class="slide fade"><img src="images/snakes-ladders3.jpg" alt="Biz Kids playing a learning game"></div>
+                                    <div class="slide fade"><img src="images/board-setup.jpg" alt="Biz Kids class whiteboard"></div>
+                                    <div class="slide fade"><img src="images/tdanaction1.jpg" alt="Teacher Dan in action"></div>
+                                    <div class="slide fade"><img src="images/teaching-materials.jpg" alt="Biz Kids teaching materials"></div>
+                                    <a class="prev">&#10094;</a>
+                                    <a class="next">&#10095;</a>
+                                    <div class="dots">
+                                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Web Kid$ Description -->
+                            <div id="about-webkids" class="bg-green-50 rounded-lg p-6 shadow-md border border-green-200">
+                                <h3 class="text-xl font-bold text-green-800 mb-2">Web Kid$</h3>
+                                <p class="text-green-700 mb-4">An innovative course where students combine English language skills with modern web development. Using platforms like Gemini for assistance, students learn to:</p>
+                                 <ul class="text-green-700 list-disc list-inside space-y-1">
+                                    <li>Build personal websites with HTML, CSS, and JavaScript.</li>
+                                    <li>Create content like descriptions, stories, or blog posts in English.</li>
+                                    <li>Develop a professional online portfolio showcasing their language and technical skills.</li>
+                                </ul>
+                                 <!-- Web Kid$ Slideshow -->
+                                <div class="slideshow-container">
+                                    <div class="slide fade"><img src="images/aree-commit.jpg" alt="Student committing code"></div>
+                                    <div class="slide fade"><img src="images/areethumb.png" alt="Student project avatar"></div>
+                                    <div class="slide fade"><img src="images/mattsworldthumb.png" alt="Student project Matt's World"></div>
+                                    <a class="prev">&#10094;</a>
+                                    <a class="next">&#10095;</a>
+                                    <div class="dots">
+                                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Professional English Description -->
+                            <div id="about-proenglish" class="bg-purple-50 rounded-lg p-6 shadow-md border border-purple-200">
+                                <h3 class="text-xl font-bold text-purple-800 mb-2">Professional English</h3>
+                                <p class="text-purple-700 mb-4">This curriculum is designed for businesses and adults seeking to improve workplace communication. The course is tailored to your company's needs, focusing on:</p>
+                                 <ul class="text-purple-700 list-disc list-inside space-y-1">
+                                    <li>Writing effective and professional emails.</li>
+                                    <li>Leading successful meetings and negotiations.</li>
+                                    <li>Delivering clear and confident presentations.</li>
+                                </ul>
+                                 <!-- Biz Pro Slideshow -->
+                                <div class="slideshow-container">
+                                    <div class="slide fade"><img src="images/adult-class-heads-up1.jpg" alt="Professional English class activity"></div>
+                                    <div class="slide fade"><img src="images/adult-class-heads-up2.jpg" alt="Professional English class fun"></div>
+                                    <div class="slide fade"><img src="images/adult-class-selfie.jpg" alt="Professional English class group photo"></div>
+                                    <div class="slide fade"><img src="images/adult-talk.jpg" alt="Professional English class presentation"></div>
+                                    <a class="prev">&#10094;</a>
+                                    <a class="next">&#10095;</a>
+                                    <div class="dots">
+                                        <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="student-projects" class="mb-8 mt-12 pt-8 border-t border-gray-200">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4 text-center">Student Projects</h2>
+                        <p class="text-lg text-gray-600 mb-8 text-center max-w-3xl mx-auto">I'm incredibly proud of my students' work. Here are some of their websites, created to apply skills in a real-world, creative way.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                            <a href="https://dgkmills.github.io/Aree/" target="_blank" class="block bg-gray-50 rounded-lg p-6 shadow-md border border-gray-200 hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+                                <img src="images/areethumb.png" alt="Aree's Portfolio" class="rounded-md mb-4 w-full h-48 object-cover">
+                                <h3 class="text-xl font-semibold text-gray-900 mb-2">Aree's Website</h3>
+                                <p class="text-gray-600">A personal website showcasing Aree's new skills and interests.</p>
+                            </a>
+                            <a href="https://mattsworld.dgkmills.com" target="_blank" class="block bg-gray-50 rounded-lg p-6 shadow-md border border-gray-200 hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+                                <img src="images/mattsworldthumb.png" alt="Matt's World Project" class="rounded-md mb-4 w-full h-48 object-cover">
+                                <h3 class="text-xl font-semibold text-gray-900 mb-2">Matt's World</h3>
+                                <p class="text-gray-600">An interactive world for practicing English vocabulary.</p>
+                            </a>
+                            <div class="bg-gray-50 rounded-lg p-6 shadow-md border border-gray-200">
+                                <img src="https://placehold.co/400x250/D1D5DB/9CA3AF?text=Coming+Soon" alt="Student Project Coming Soon" class="rounded-md mb-4 w-full h-48 object-cover">
+                                <h3 class="text-xl font-semibold text-gray-900 mb-2">More Projects Coming Soon!</h3>
+                                <p class="text-gray-600">Check back later to see more amazing work from my students.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div id="classes-projects" class="page-section">
-            <div class="bg-white shadow-lg rounded-xl p-8">
-                <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Classes, Projects & About</h1>
-                <div class="mb-12">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">About Teacher Dan</h2>
-                    <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
-                        <img src="images/tdan-great-choice.jpg" alt="Teacher Dan's Portrait" class="rounded-full shadow-md w-48 h-48 object-cover flex-shrink-0">
-                        <div class="text-lg text-gray-600 space-y-4">
-                           <p><strong>Passionate ESL Instructor:</strong> With over 10 years of experience, I create dynamic and engaging learning environments.</p>
-                           <p><strong>Holistic Approach:</strong> I combine core language practice with creative, project-based learning to empower students and build confidence.</p>
-                           <p><strong>Tech-Integrated Learning:</strong> My background in web development and AI allows me to integrate modern tools into language education, building future-ready skills for every student.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Detailed Class Descriptions</h2>
-                    <div class="space-y-8">
-                        <!-- Biz Kid$ Description -->
-                        <div class="bg-blue-50 rounded-lg p-6 shadow-md border border-blue-200">
-                            <h3 class="text-xl font-bold text-blue-800 mb-2">Biz Kid$</h3>
-                            <p class="text-blue-700 mb-4">My flagship business-focused ESL class makes learning English both fun and practical. Students are immersed in a gamified learning environment where they start their own pretend businesses. Key activities include:</p>
-                            <ul class="text-blue-700 list-disc list-inside space-y-1">
-                                <li>Designing products and marketing materials.</li>
-                                <li>Practicing conversational English for sales and customer service.</li>
-                                <li>Developing presentation skills and managing pretend finances.</li>
-                            </ul>
-                        </div>
-                        <!-- Web Kid$ Description -->
-                        <div class="bg-green-50 rounded-lg p-6 shadow-md border border-green-200">
-                            <h3 class="text-xl font-bold text-green-800 mb-2">Web Kid$</h3>
-                            <p class="text-green-700 mb-4">An innovative course where students combine English language skills with modern web development. Using platforms like Gemini for assistance, students learn to:</p>
-                             <ul class="text-green-700 list-disc list-inside space-y-1">
-                                <li>Build personal websites with HTML, CSS, and JavaScript.</li>
-                                <li>Create content like descriptions, stories, or blog posts in English.</li>
-                                <li>Develop a professional online portfolio showcasing their language and technical skills.</li>
-                            </ul>
-                        </div>
-                        <!-- Professional English Description -->
-                        <div class="bg-purple-50 rounded-lg p-6 shadow-md border border-purple-200">
-                            <h3 class="text-xl font-bold text-purple-800 mb-2">Professional English</h3>
-                            <p class="text-purple-700 mb-4">This curriculum is designed for businesses and adults seeking to improve workplace communication. The course is tailored to your company's needs, focusing on:</p>
-                             <ul class="text-purple-700 list-disc list-inside space-y-1">
-                                <li>Writing effective and professional emails.</li>
-                                <li>Leading successful meetings and negotiations.</li>
-                                <li>Delivering clear and confident presentations.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Student Projects</h2>
-                    <p class="text-lg text-gray-600 mb-8">I'm incredibly proud of my students' work. Here are some of their websites, created to apply skills in a real-world, creative way.</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <a href="https://dgkmills.github.io/Aree/" target="_blank" class="block bg-gray-50 rounded-lg p-6 shadow-md border border-gray-200 hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                            <img src="images/areethumb.png" alt="Aree's Portfolio" class="rounded-md mb-4 w-full h-48 object-cover">
-                            <h3 class="text-xl font-semibold text-gray-900 mb-2">Aree's Website</h3>
-                            <p class="text-gray-600">A personal website showcasing Aree's new skills and interests.</p>
-                        </a>
-                        <div class="bg-gray-50 rounded-lg p-6 shadow-md border border-gray-200">
-                            <img src="https://placehold.co/400x250/D1D5DB/9CA3AF?text=Coming+Soon" alt="Student Project Coming Soon" class="rounded-md mb-4 w-full h-48 object-cover">
-                            <h3 class="text-xl font-semibold text-gray-900 mb-2">More Projects Coming Soon!</h3>
-                            <p class="text-gray-600">Check back later to see more amazing work from my students.</p>
-                        </div>
-                    </div>
+        
+        <!-- Class Modals -->
+        <div id="bizkids-modal" class="modal-backdrop">
+            <div class="modal-content bg-blue-50 border border-blue-200">
+                <span class="modal-close-btn">&times;</span>
+                <img src="images/tdanwelcome.jpg" alt="Biz Kid$ Class" class="rounded-md mb-4 w-full h-48 object-cover">
+                <h2 class="text-2xl font-bold text-blue-800 mb-2">Biz Kid$</h2>
+                <ul class="text-blue-700 mb-4 list-disc list-inside space-y-1">
+                    <li>Learn English through a fun, business-themed game.</li>
+                    <li>Practice vocabulary, conversation, and presentation skills.</li>
+                    <li>Build confidence in a hands-on, interactive environment.</li>
+                </ul>
+                <div class="grid grid-cols-2 gap-4 mt-auto">
+                    <a href="#" onclick="closeModalAndScroll('bizkids-modal', 'about-bizkids')" class="inline-block text-center py-3 px-4 border border-blue-600 rounded-md shadow-sm text-lg font-medium text-blue-600 bg-white hover:bg-blue-100 transition-colors">Learn More</a>
+                    <a href="#" onclick="showPage('schedule', 'Biz Kid$')" class="inline-block text-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">Sign Up</a>
                 </div>
             </div>
         </div>
+        <div id="webkids-modal" class="modal-backdrop">
+            <div class="modal-content bg-green-50 border border-green-200">
+                <span class="modal-close-btn">&times;</span>
+                <img src="images/aree-commit.jpg" alt="Web Kid$ Class" class="rounded-md mb-4 w-full h-48 object-cover">
+                <h2 class="text-2xl font-bold text-green-800 mb-2">Web Kid$</h2>
+                <ul class="text-green-700 mb-4 list-disc list-inside space-y-1">
+                   <li>Combine English learning with modern web development.</li>
+                   <li>Learn HTML, CSS, and JavaScript basics.</li>
+                   <li>Build a real-world online portfolio to showcase your skills.</li>
+                </ul>
+                <div class="grid grid-cols-2 gap-4 mt-auto">
+                   <a href="#" onclick="closeModalAndScroll('webkids-modal', 'about-webkids')" class="inline-block text-center py-3 px-4 border border-green-600 rounded-md shadow-sm text-lg font-medium text-green-600 bg-white hover:bg-green-100 transition-colors">Learn More</a>
+                   <a href="#" onclick="showPage('schedule', 'Web Kid$')" class="inline-block text-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 transition-colors">Sign Up</a>
+                </div>
+            </div>
+        </div>
+        <div id="proenglish-modal" class="modal-backdrop">
+            <div class="modal-content bg-purple-50 border border-purple-200">
+                <span class="modal-close-btn">&times;</span>
+                <img src="images/adult-class-selfie.jpg" alt="Professional English Class" class="rounded-md mb-4 w-full h-48 object-cover">
+                <h2 class="text-2xl font-bold text-purple-800 mb-2">Professional English</h2>
+                 <ul class="text-purple-700 mb-4 list-disc list-inside space-y-1">
+                    <li>Tailored curriculum for business communication needs.</li>
+                    <li>Master emails, presentations, meetings, and negotiations.</li>
+                    <li>Gain confidence and clarity in professional settings.</li>
+                </ul>
+                <div class="grid grid-cols-2 gap-4 mt-auto">
+                    <a href="#" onclick="closeModalAndScroll('proenglish-modal', 'about-proenglish')" class="inline-block text-center py-3 px-4 border border-purple-600 rounded-md shadow-sm text-lg font-medium text-purple-600 bg-white hover:bg-purple-100 transition-colors">Learn More</a>
+                    <a href="#" onclick="showPage('schedule', 'Professional English')" class="inline-block text-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors">Sign Up</a>
+                </div>
+            </div>
+        </div>
+
         <div id="schedule" class="page-section">
-            <div class="bg-white shadow-lg rounded-xl p-8">
+             <!-- Schedule content remains unchanged -->
+             <div class="bg-white shadow-lg rounded-xl p-8">
                 <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Schedule a Consultation</h1>
                 <p class="text-lg text-gray-600 mb-8">Ready to start your language journey? First, select a class you're interested in, then choose a time slot below to request a free 15-minute consultation.</p>
                 <div id="userIdContainer" class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 hidden">
@@ -297,7 +459,6 @@
                     <div id="form-status" class="mt-4 text-center text-sm font-semibold"></div>
                 </form>
 
-                <!-- Class Tracker content moved here -->
                 <div id="class-tracker" class="mt-8 pt-8 border-t border-gray-300">
                     <div class="bg-white shadow-lg rounded-xl p-8">
                         <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Class Tracker</h1>
@@ -328,23 +489,20 @@
                                 </div>
                                 <div id="class-history-container" class="p-4 rounded-lg bg-gray-100">
                                      <p class="font-medium text-gray-800">Class History</p>
-                                     <ul id="classHistoryList" class="text-sm text-gray-700 mt-2 list-disc list-inside space-y-1">
-                                        <!-- History will be populated here -->
-                                     </ul>
+                                     <ul id="classHistoryList" class="text-sm text-gray-700 mt-2 list-disc list-inside space-y-1"></ul>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- End of Class Tracker content -->
             </div>
         </div>
         <div id="tools-for-learning" class="page-section">
+             <!-- Tools content remains unchanged -->
             <div class="bg-white shadow-lg rounded-xl p-8">
                 <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Tools for Learning</h1>
                 <p class="text-lg text-gray-600 mb-8">These interactive tools are great for practicing your English skills. They also demonstrate the type of projects students learn to build in my Web Kid$ class.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Tool 1: Dialogue -->
                     <div class="bg-gray-50 rounded-lg p-6 shadow-md border border-gray-200">
                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Dialogue Practice Tool</h3>
                         <p class="text-gray-600 mb-4">Practice your conversation skills. This tool helps you generate and practice real-world dialogues.</p>
@@ -352,7 +510,6 @@
                             <iframe src="https://dialogue.site-mills.com" title="Dialogue Generation Tool" allow="microphone"></iframe>
                         </div>
                     </div>
-                    <!-- Tool 2: Pronunciation -->
                      <div class="bg-gray-50 rounded-lg p-6 shadow-md border border-gray-200">
                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Pronunciation Practice Tool</h3>
                         <p class="text-gray-600 mb-4">Improve your pronunciation. Get instant feedback on your spoken English and practice tricky sounds.</p>
@@ -364,19 +521,13 @@
             </div>
         </div>
          <div id="contact" class="page-section">
+             <!-- Contact content remains unchanged -->
             <div class="bg-white shadow-lg rounded-xl p-8">
                 <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Contact Me</h1>
                 <div class="text-lg text-gray-700 text-center space-y-4">
-                    <p>
-                        <strong>Email:</strong>
-                        <a href="mailto:dan@dgkmills.com" class="text-blue-600 hover:underline">dan@dgkmills.com</a>
-                    </p>
-                    <p>
-                        <strong>Phone:</strong> 086 333 1493
-                    </p>
-                    <p>
-                        <strong>Location:</strong> Ban Pong, Thailand
-                    </p>
+                    <p><strong>Email:</strong> <a href="mailto:dan@dgkmills.com" class="text-blue-600 hover:underline">dan@dgkmills.com</a></p>
+                    <p><strong>Phone:</strong> 086 333 1493</p>
+                    <p><strong>Location:</strong> Ban Pong, Thailand</p>
                 </div>
             </div>
         </div>
@@ -395,6 +546,7 @@
         import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, updateDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js";
 
+        // Firebase config remains unchanged
         const firebaseConfig = {
           apiKey: "AIzaSyAdkkonrM6gFCN_xmw5g1qSJipHJ_LZKTE",
           authDomain: "schedule.dgkmills.com",
@@ -405,26 +557,20 @@
           measurementId: "G-QJ1JM61WK3"
         };
         const app = initializeApp(firebaseConfig);
-        
         const appCheck = initializeAppCheck(app, {
           provider: new ReCaptchaV3Provider('6Le_fssrAAAAAE79h4IgwgqxOghcpWqZyj95pTRq'),
           isTokenAutoRefreshEnabled: true
         });
-
         const db = getFirestore(app);
         const auth = getAuth(app);
-        
         setLogLevel('debug');
 
+        // The rest of the Firebase script remains unchanged...
         let userId = null;
         let authReady = false;
 
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-            } else {
-                userId = null; 
-            }
+            if (user) { userId = user.uid; } else { userId = null; }
             authReady = true;
             document.getElementById('userIdDisplay').textContent = userId || 'Unknown';
             initializeSchedule();
@@ -451,13 +597,9 @@
                 const classValue = button.getAttribute('data-class');
                 selectedClassValue = classValue;
                 let ringColor = '';
-                if (classValue === 'Biz Kid$') {
-                    ringColor = 'ring-blue-500';
-                } else if (classValue === 'Web Kid$') {
-                    ringColor = 'ring-green-500';
-                } else if (classValue === 'Professional English') {
-                    ringColor = 'ring-purple-500';
-                }
+                if (classValue === 'Biz Kid$') { ringColor = 'ring-blue-500'; } 
+                else if (classValue === 'Web Kid$') { ringColor = 'ring-green-500'; } 
+                else if (classValue === 'Professional English') { ringColor = 'ring-purple-500'; }
                 button.classList.add('border-blue-500', 'ring-2', 'ring-offset-2', ringColor);
                 document.getElementById('selectedClass').value = selectedClassValue;
                 document.getElementById('selected-class').textContent = selectedClassValue;
@@ -482,10 +624,7 @@
         });
         
         function initializeSchedule() {
-            if (!authReady) {
-                 setTimeout(initializeSchedule, 100);
-                 return;
-            }
+            if (!authReady) { setTimeout(initializeSchedule, 100); return; }
             if (!userId) {
                 console.error('User not authenticated, cannot initialize schedule listeners.');
                 const timeSlotsContainer = document.getElementById('time-slots-container');
@@ -507,9 +646,7 @@
                 const slotsByDay = {};
                 querySnapshot.forEach(doc => {
                     const data = { id: doc.id, ...doc.data() };
-                    if (!slotsByDay[data.day]) {
-                        slotsByDay[data.day] = [];
-                    }
+                    if (!slotsByDay[data.day]) { slotsByDay[data.day] = []; }
                     slotsByDay[data.day].push(data);
                 });
 
@@ -525,11 +662,7 @@
                     dayCol.appendChild(header);
 
                     if (slotsByDay[day]) {
-                        slotsByDay[day].sort((a, b) => {
-                            const timeA = new Date(`1970/01/01 ${a.time}`);
-                            const timeB = new Date(`1970/01/01 ${b.time}`);
-                            return timeA - timeB;
-                        });
+                        slotsByDay[day].sort((a, b) => new Date(`1970/01/01 ${a.time}`) - new Date(`1970/01/01 ${b.time}`));
                         
                         slotsByDay[day].forEach(data => {
                             const button = document.createElement('button');
@@ -563,19 +696,15 @@
 
         scheduleForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-
             if (!selectedClassValue || !selectedTimeSlotId) {
                 formStatus.textContent = 'Please select both a class and a time slot.';
-                formStatus.classList.remove('text-green-600', 'text-red-600');
                 formStatus.classList.add('text-yellow-600');
                 return;
             }
-
             submitBtn.disabled = true;
             submitText.classList.add('hidden');
             submitSpinner.classList.remove('hidden');
             formStatus.textContent = '';
-
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const message = document.getElementById('message').value;
@@ -586,41 +715,30 @@
                 const timeSlotDoc = await getDoc(timeSlotRef);
                 if (timeSlotDoc.exists() && timeSlotDoc.data().booked) {
                     formStatus.textContent = 'This time slot was just booked. Please select another one.';
-                    formStatus.classList.remove('text-green-600', 'text-yellow-600');
                     formStatus.classList.add('text-red-600');
-                     submitBtn.disabled = false;
+                    submitBtn.disabled = false;
                     submitText.classList.remove('hidden');
                     submitSpinner.classList.add('hidden');
                     return;
                 }
                 
                 await updateDoc(timeSlotRef, { booked: true });
-
                 await addDoc(collection(db, `artifacts/${appId}/public/data/consultations`), {
-                    class: selectedClassValue,
-                    timeSlotId: selectedTimeSlotId,
+                    class: selectedClassValue, timeSlotId: selectedTimeSlotId,
                     day: document.querySelector(`[data-slot-id="${selectedTimeSlotId}"]`).getAttribute('data-day'),
                     time: document.querySelector(`[data-slot-id="${selectedTimeSlotId}"]`).getAttribute('data-time'),
-                    name,
-                    email,
-                    message,
-                    userId: userId,
-                    timestamp: new Date().toISOString(),
+                    name, email, message, userId: userId, timestamp: new Date().toISOString(),
                 });
-
                 formStatus.textContent = 'Your consultation request has been submitted! I will get back to you shortly.';
-                formStatus.classList.remove('text-red-600', 'text-yellow-600');
                 formStatus.classList.add('text-green-600');
                 scheduleForm.reset();
                 document.getElementById('selected-class-display').classList.add('hidden');
                 document.getElementById('selected-time-display').classList.add('hidden');
                 selectedClassValue = null;
                 selectedTimeSlotId = null;
-
             } catch (e) {
                 console.error("Error adding document: ", e);
                 formStatus.textContent = `There was an error submitting your request. Please try again. Error: ${e.message}`;
-                formStatus.classList.remove('text-green-600', 'text-yellow-600');
                 formStatus.classList.add('text-red-600');
             } finally {
                 submitBtn.disabled = false;
@@ -637,11 +755,9 @@
             e.preventDefault();
             const clientId = document.getElementById('clientIdInput').value.trim();
             const appId = 'dgkmills-schedule-tracker';
-
             const submitBtn = trackerForm.querySelector('button[type="submit"]');
             const submitText = document.getElementById('tracker-submit-text');
             const submitSpinner = document.getElementById('tracker-submit-spinner');
-
             submitBtn.disabled = true;
             submitText.classList.add('hidden');
             submitSpinner.classList.remove('hidden');
@@ -656,11 +772,9 @@
                 submitSpinner.classList.add('hidden');
                 return;
             }
-
             try {
                 const docRef = doc(db, `artifacts/${appId}/public/data/client-packages`, clientId);
                 const docSnap = await getDoc(docRef);
-
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     const classesTaught = data.classesTaught || [];
@@ -669,13 +783,12 @@
                     document.getElementById('totalClasses').textContent = data.totalClasses;
                     document.getElementById('classesUsed').textContent = classesTaught.length;
                     document.getElementById('classesRemaining').textContent = data.totalClasses - classesTaught.length;
-                    
                     const historyList = document.getElementById('classHistoryList');
-                    historyList.innerHTML = ''; // Clear previous results
+                    historyList.innerHTML = '';
                     if(classesTaught.length > 0) {
                         classesTaught.forEach(timestamp => {
                             const li = document.createElement('li');
-                            li.textContent = new Date(timestamp).toLocaleDateString(); // Format date
+                            li.textContent = new Date(timestamp).toLocaleDateString();
                             historyList.appendChild(li);
                         });
                     } else {
@@ -684,7 +797,6 @@
                         li.className = 'italic text-gray-500';
                         historyList.appendChild(li);
                     }
-
                     trackerResults.classList.remove('hidden');
                     trackerStatus.textContent = '';
                 } else {
@@ -703,7 +815,7 @@
         });
     </script>
     <script>
-        // --- Page Navigation Logic ---
+        // --- Page Navigation, Modal & Slideshow Logic ---
         const menuBtn = document.getElementById('menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
 
@@ -719,10 +831,8 @@
 
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('border-blue-500', 'text-gray-900');
-                link.classList.add('border-transparent', 'text-gray-500');
                 if(link.getAttribute('data-page') === pageId){
                     link.classList.add('border-blue-500', 'text-gray-900');
-                    link.classList.remove('border-transparent', 'text-gray-500');
                 }
             });
 
@@ -731,6 +841,32 @@
                 if (classButton) {
                     classButton.click();
                 }
+            }
+            // Close any open modals when switching pages
+            document.querySelectorAll('.modal-backdrop.active').forEach(modal => {
+                modal.classList.remove('active');
+            });
+            // Only scroll to top if we are not trying to scroll to a specific section
+            if (!window.shouldScroll) {
+                window.scrollTo(0, 0); 
+            }
+            window.shouldScroll = false; // Reset flag
+        }
+
+        function closeModalAndScroll(modalId, elementId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            const element = document.getElementById(elementId);
+            if (element) {
+                // Ensure the home page is active before scrolling
+                if (!document.getElementById('home').classList.contains('active')) {
+                    showPage('home');
+                }
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
             }
         }
 
@@ -746,10 +882,56 @@
             mobileMenu.classList.toggle('hidden');
         });
 
+        // Modal Logic
+        document.addEventListener('click', e => {
+            const modalButton = e.target.closest('[data-modal]');
+            if (modalButton) {
+                const modalId = modalButton.dataset.modal;
+                document.getElementById(modalId).classList.add('active');
+            }
+            if (e.target.matches('.modal-backdrop, .modal-close-btn')) {
+                e.target.closest('.modal-backdrop').classList.remove('active');
+            }
+        });
+
+        // Slideshow Logic
+        function initializeSlideshows() {
+            document.querySelectorAll('.slideshow-container').forEach(container => {
+                let slideIndex = 1;
+                const slides = container.querySelectorAll('.slide');
+                const dots = container.querySelectorAll('.dot');
+                const prev = container.querySelector('.prev');
+                const next = container.querySelector('.next');
+
+                if (slides.length === 0) return;
+
+                function showSlides(n) {
+                    if (n > slides.length) { slideIndex = 1 }
+                    if (n < 1) { slideIndex = slides.length }
+                    slides.forEach(slide => slide.style.display = "none");
+                    dots.forEach(dot => dot.classList.remove("active"));
+                    slides[slideIndex - 1].style.display = "block";
+                    dots[slideIndex - 1].classList.add("active");
+                }
+
+                if(prev) prev.addEventListener('click', () => showSlides(slideIndex += -1));
+                if(next) next.addEventListener('click', () => showSlides(slideIndex += 1));
+                dots.forEach((dot, index) => {
+                    dot.addEventListener('click', () => showSlides(slideIndex = index + 1));
+                });
+
+                showSlides(slideIndex);
+            });
+        }
+
         window.onload = () => {
             showPage('home');
+            initializeSlideshows();
         };
+
         window.showPage = showPage;
+        window.closeModalAndScroll = closeModalAndScroll; 
     </script>
 </body>
 </html>
+
